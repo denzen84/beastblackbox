@@ -1,3 +1,16 @@
+//  BEAST black box utility
+//  Utility to read benary beast traffic from the file
+//  File could be generated using netcat:
+//  nc 127.0.0.1 30005 > radar.log
+//
+//  (c) 2018 Denis G Dugushkin
+//  dentall@mail.ru
+//
+//  based on sources of dump1090 and view1090
+//
+//
+//  Previous copyrights
+//----------------------------------------------------------------------
 // view1090, a Mode S messages viewer for dump1090 devices.
 //
 // Copyright (C) 2014 by Malcolm Robb <Support@ATTAvionics.com>
@@ -51,11 +64,13 @@ void view1090InitConfig(void) {
     memset(&Modes,    0, sizeof(Modes));
 
     Modes.check_crc               = 1;
-    Modes.interactive_rows        = 40;
+	Modes.throttle                = 0;
+	Modes.filename                = NULL;
+    Modes.interactive_rows        = 60;
     Modes.interactive_display_ttl = 0;
     Modes.interactive             = 0;
     Modes.quiet                   = 0;
-    Modes.maxRange                = 1852 * 300; // 300NM default max range
+    Modes.maxRange                = 1852 * 450; // 300NM default max range
     Modes.mode_ac = 1;
     
 }
@@ -99,27 +114,219 @@ void view1090Init(void) {
 void showHelp(void) {
     printf(
 "-----------------------------------------------------------------------------\n"
-"| BEAST black box utility     %45s |\n"
+"| BEAST black box utility                                             v0.995a|\n"
 "-----------------------------------------------------------------------------\n"
-  "--no-interactive         Disable interactive mode, print messages to stdout\n"
-  "--interactive-rows <num> Max number of rows in interactive mode (default: 15)\n"
-  "--interactive-ttl <sec>  Remove from list if idle for <sec> (default: 60)\n"
-  "--interactive-rtl1090    Display flight table in RTL1090 format\n"
+ 
+  "--ifile <file>           File to proceed\n"
   "--modeac                 Enable decoding of SSR modes 3/A & 3/C\n"
-  "--net-bo-ipaddr <IPv4>   TCP Beast output listen IPv4 (default: 127.0.0.1)\n"
-  "--net-bo-port <port>     TCP Beast output listen port (default: 30005)\n"
-  "--lat <latitude>         Reference/receiver latitide for surface posn (opt)\n"
-  "--lon <longitude>        Reference/receiver longitude for surface posn (opt)\n"
-  "--max-range <distance>   Absolute maximum range for position decoding (in nm, default: 300)\n"
+  "--sbs-output             Show messages in SBS format\n"
+  "--show-only <addr>       Show only messages from the given ICAO\n"
+  "--max-messages <count>   Limit messages count (from start of the file)\n"
+  "--show-progress          Show progress during file operation\n"
+  "\nAdditional BEAST options:\n"
   "--no-crc-check           Disable messages with broken CRC (discouraged)\n"
   "--no-fix                 Disable single-bits error correction using CRC\n"
   "--fix                    Enable single-bits error correction using CRC\n"
   "--aggressive             More CPU for more messages (two bits fixes, ...)\n"
-  "--metric                 Use metric units (meters, km/h, ...)\n"
-  "--show-only <addr>       Show only messages from the given ICAO on stdout\n"
-  "--help                   Show this help\n",
-  MODES_DUMP1090_VARIANT " " MODES_DUMP1090_VERSION
+  "--metric                 Use metric units (meters, km/h, ...)\n\n"
+  "--help                   Show this help\n"
     );
+}
+
+//
+//=========================================================================
+//
+// Write SBS output to TCP clients
+//
+static void modesSendSBSOutput(struct modesMessage *mm) {
+    char *p;
+	char buffer[200];
+    struct timespec now;
+    struct tm    stTime_receive, stTime_now;
+    int          msgType;
+	p = &buffer[0];
+	struct aircraft *a = Modes.aircrafts;
+	
+    // For now, suppress non-ICAO addresses
+    if ((mm->addr & MODES_NON_ICAO_ADDRESS) || !(!Modes.show_only || mm->addr == Modes.show_only))
+        return;
+
+    //
+    // SBS BS style output checked against the following reference
+    // http://www.homepages.mcb.net/bones/SBS/Article/Barebones42_Socket_Data.htm - seems comprehensive
+    //
+
+    // Decide on the basic SBS Message Type
+    switch (mm->msgtype) {
+    case 4:
+    case 20:
+        msgType = 5;
+        break;
+        break;
+
+    case 5:
+    case 21:
+        msgType = 6;
+        break;
+
+    case 0:
+    case 16:
+        msgType = 7;
+        break;
+
+    case 11:
+        msgType = 8;
+        break;
+
+    case 17:
+    case 18:
+        if (mm->metype >= 1 && mm->metype <= 4) {
+            msgType = 1;
+        } else if (mm->metype >= 5 && mm->metype <=  8) {
+            msgType = 2;
+        } else if (mm->metype >= 9 && mm->metype <= 18) {
+            msgType = 3;
+        } else if (mm->metype == 19) {
+            msgType = 4;
+        } else {
+            return;
+        }
+        break;
+
+    default:
+        return;
+    }
+
+    // Fields 1 to 6 : SBS message type and ICAO address of the aircraft and some other stuff
+    p += sprintf(p, "MSG,%d,1,1,%06X,1,", msgType, mm->addr);
+
+    // Find current system time
+    clock_gettime(CLOCK_REALTIME, &now);
+    localtime_r(&now.tv_sec, &stTime_now);
+
+    // Find message reception time
+    localtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
+
+    // Fields 7 & 8 are the message reception time and date
+    p += sprintf(p, "%04d/%02d/%02d,", (stTime_receive.tm_year+1900),(stTime_receive.tm_mon+1), stTime_receive.tm_mday);
+    p += sprintf(p, "%02d:%02d:%02d.%03u,", stTime_receive.tm_hour, stTime_receive.tm_min, stTime_receive.tm_sec, (unsigned) (mm->sysTimestampMsg.tv_nsec / 1000000U));
+
+    // Fields 9 & 10 are the current time and date
+    p += sprintf(p, "%04d/%02d/%02d,", (stTime_now.tm_year+1900),(stTime_now.tm_mon+1), stTime_now.tm_mday);
+    p += sprintf(p, "%02d:%02d:%02d.%03u", stTime_now.tm_hour, stTime_now.tm_min, stTime_now.tm_sec, (unsigned) (now.tv_nsec / 1000000U));
+
+    // Field 11 is the callsign (if we have it)
+    if (mm->callsign_valid) {p += sprintf(p, ",%s", mm->callsign);}
+    else                    {p += sprintf(p, ",");}
+
+    // Field 12 is the altitude (if we have it)
+    if (mm->altitude_valid) {
+        if (Modes.use_gnss) {
+            if (mm->altitude_source == ALTITUDE_GNSS) {
+                p += sprintf(p, ",%dH", mm->altitude);
+            } else if (trackDataValid(&a->gnss_delta_valid)) {
+                p += sprintf(p, ",%dH", mm->altitude + a->gnss_delta);
+            } else {
+                p += sprintf(p, ",%d", mm->altitude);
+            }
+        } else {
+            if (mm->altitude_source == ALTITUDE_BARO) {
+                p += sprintf(p, ",%d", mm->altitude);
+            } else if (trackDataValid(&a->gnss_delta_valid)) {
+                p += sprintf(p, ",%d", mm->altitude - a->gnss_delta);
+            } else {
+                p += sprintf(p, ",");
+            }
+        }
+    } else {
+        p += sprintf(p, ",");
+    }
+
+    // Field 13 is the ground Speed (if we have it)
+    if (mm->speed_valid && mm->speed_source == SPEED_GROUNDSPEED) {
+        p += sprintf(p, ",%d", mm->speed);
+    } else {
+        p += sprintf(p, ","); 
+    }
+
+    // Field 14 is the ground Heading (if we have it)       
+    if (mm->heading_valid && mm->heading_source == HEADING_TRUE) {
+        p += sprintf(p, ",%d", mm->heading);
+    } else {
+        p += sprintf(p, ",");
+    }
+
+    // Fields 15 and 16 are the Lat/Lon (if we have it)
+    if (mm->cpr_decoded) {
+        p += sprintf(p, ",%1.5f,%1.5f", mm->decoded_lat, mm->decoded_lon);
+    } else {
+        p += sprintf(p, ",,");
+    }
+
+    // Field 17 is the VerticalRate (if we have it)
+    if (mm->vert_rate_valid) {
+        p += sprintf(p, ",%d", mm->vert_rate);
+    } else {
+        p += sprintf(p, ",");
+    }
+
+    // Field 18 is  the Squawk (if we have it)
+    if (mm->squawk_valid) {
+        p += sprintf(p, ",%04x", mm->squawk);
+    } else {
+        p += sprintf(p, ",");
+    }
+
+    // Field 19 is the Squawk Changing Alert flag (if we have it)
+    if (mm->alert_valid) {
+        if (mm->alert) {
+            p += sprintf(p, ",-1");
+        } else {
+            p += sprintf(p, ",0");
+        }
+    } else {
+        p += sprintf(p, ",");
+    }
+
+    // Field 20 is the Squawk Emergency flag (if we have it)
+    if (mm->squawk_valid) {
+        if ((mm->squawk == 0x7500) || (mm->squawk == 0x7600) || (mm->squawk == 0x7700)) {
+            p += sprintf(p, ",-1");
+        } else {
+            p += sprintf(p, ",0");
+        }
+    } else {
+        p += sprintf(p, ",");
+    }
+
+    // Field 21 is the Squawk Ident flag (if we have it)
+    if (mm->spi_valid) {
+        if (mm->spi) {
+            p += sprintf(p, ",-1");
+        } else {
+            p += sprintf(p, ",0");
+        }
+    } else {
+        p += sprintf(p, ",");
+    }
+
+    // Field 22 is the OnTheGround flag (if we have it)
+    switch (mm->airground) {
+    case AG_GROUND:
+        p += sprintf(p, ",-1");
+        break;
+    case AG_AIRBORNE:
+        p += sprintf(p, ",0");
+        break;
+    default:
+        p += sprintf(p, ",");
+        break;
+    }
+
+    p += sprintf(p, "\r\n");
+
+    printf("%s", buffer);
+	
 }
 
 //
@@ -202,7 +409,9 @@ int decodeBinMessage(char *p) {
             }
         }
 
-        useModesMessage(&mm);
+		//if (Modes.interactive_rtl1090) 
+		useModesMessage(&mm);
+		if(Modes.quiet) modesSendSBSOutput(&mm);
     }
     return (0);
 }
@@ -262,32 +471,23 @@ static int copyBinMessageSafe(char *p, int limit, char *out) {
 
 int readbeastfile() {
 
-    int input_bb;//, output_bb;   
+    int input_bb;   
     
 	ssize_t i,k,ret_in,seek;
     char buffer[BUF_SIZE];
 	struct stat sb;
 	uint64_t  j, global;
-
 	
 	char beastmessage[MAX_MSG_LEN];
 		
  
-    input_bb = open("2017-03-15--14-28-17-ulss7-beast-bin.log", O_RDONLY);
+    input_bb = open(Modes.filename, O_RDONLY);
     if (input_bb == -1) {
-            perror ("open");
+            fprintf(stderr, "Error. Unable to open file %s\n",Modes.filename);
             return 2;
     }
-	/*
-    output_bb = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (output_bb == -1) {
-            perror ("open write");
-            return 2;
-    }
-	*/
 	
    fstat(input_bb, &sb);
-   printf("Size: %llu\n", (uint64_t)sb.st_size);
 
     seek = 0;
 	global = 0;
@@ -302,7 +502,8 @@ int readbeastfile() {
 	k = 0;
 	
 	while(k < (ret_in + seek)) {
-	
+	icaoFilterExpire();
+    trackPeriodicUpdate();
 	i = copyBinMessageSafe(&buffer[k], ret_in + seek - k, &beastmessage[0]);
 	if(i > 0) {
 	j++;
@@ -313,25 +514,17 @@ int readbeastfile() {
 	printf("\n");
 	*/
 	
-	//if ( j % 0xFFFFF  == 0) 
-
-        {printf("\nFile offset 0x%llX (%llu%%), message #%llu:\n", global, ((100*global)/(uint64_t)sb.st_size),j); fflush(stdout);}
+	if (Modes.throttle && (j % 0xFFF  == 0)) {printf("Processing... File offset 0x%llX (%llu%%), message #%llu\r", global, ((100*global)/(uint64_t)sb.st_size),j); }
 	decodeBinMessage(&beastmessage[0]);
-	if (Modes.interactive_display_ttl && (j==Modes.interactive_display_ttl)) return 0;
-	/*
-    ret_out = write (output_bb, &beastmessage[0], (ssize_t) i);
-    if(ret_out != i){
-    return 4;
-	}
-	*/
+	
+	if (Modes.interactive_display_ttl && (j==Modes.interactive_display_ttl)) {goto EXIT_LIMIT; }
 	
 	k+=i;
 	global+=i;
 	} else
 	   if(i == 0) {
-		//printf("\nExit with 0, global=%llX k=%d, bufsize=%d, seek = %d\n",global, k, BUF_SIZE, seek);   
 		if ((ret_in + seek - k) == 1) {
-			printf("break\n");
+
 			break; 
 			
 		} 
@@ -343,22 +536,19 @@ int readbeastfile() {
 	}
 	seek = BUF_SIZE - k;
 	if (seek > 0 ) memcpy(&buffer[0],&buffer[k], seek);
-	//printf("\nExit, k=%d, bufsize=%d, seek = %d\n", k, BUF_SIZE, seek);
 	
-
 	ret_in = read (input_bb, &buffer[seek], k);
 	}
 	
-	printf("Total processed %llu messages\n", j);
+	EXIT_LIMIT:
+	printf("\nTotal processed %llu messages\n", j);
    
 
    
     close (input_bb);
-	//close (output_bb);
 
     return 0;
 }
-
 
 //
 //=========================================================================
@@ -376,15 +566,21 @@ int main(int argc, char **argv) {
     // Parse the command line options
     for (j = 1; j < argc; j++) {
         int more = ((j + 1) < argc); // There are more arguments
-
-        if (!strcmp(argv[j],"--show-only") && more) {
+		
+		if (!strcmp(argv[j],"--modeac")) {
+            Modes.mode_ac = 1;
+		} else if (!strcmp(argv[j],"--ifile") && more) {
+		    Modes.filename = strdup(argv[++j]);
+		} else if (!strcmp(argv[j],"--show-only") && more) {
             Modes.show_only = (uint32_t) strtoul(argv[++j], NULL, 16);
             Modes.interactive = 0;
         } else if (!strcmp(argv[j],"--max-messages") && more) {
             Modes.interactive_display_ttl = atoi(argv[++j]);
-        } else if (!strcmp(argv[j],"--interactive-rtl1090")) {
-            Modes.interactive = 1;
+        } else if (!strcmp(argv[j],"--sbs-output")) {
+            Modes.quiet = 1;
             Modes.interactive_rtl1090 = 1;
+		} else if (!strcmp(argv[j],"--show-progress")) {
+            Modes.throttle = 1;
         } else if (!strcmp(argv[j],"--lat") && more) {
             Modes.fUserLat = atof(argv[++j]);
         } else if (!strcmp(argv[j],"--lon") && more) {
@@ -410,8 +606,13 @@ int main(int argc, char **argv) {
             exit(1);
         }
     }
-
-    
+	
+	if (Modes.filename == NULL) {
+			fprintf(stderr, "No file specified. Nothing to do. Use --ifile option.\n\n");
+            showHelp();
+            exit(1);		
+	}
+	
     readbeastfile();
     	
     return (0);

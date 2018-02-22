@@ -2,7 +2,7 @@
 # When building a package or installing otherwise in the system, make
 # sure that the variable PREFIX is defined, e.g. make PREFIX=/usr/local
 #
-PROGNAME=dump1090
+PROGNAME=beastblackbox
 
 ifndef DUMP1090_VERSION
 DUMP1090_VERSION=$(shell git describe --always --tags --match=v*)
@@ -44,24 +44,13 @@ CFLAGS+= -DMISSING_NANOSLEEP
 COMPAT+= compat/clock_nanosleep/clock_nanosleep.o
 endif
 
-all: dump1090 view1090 beastblackbox
+all: beastblackbox
 
 %.o: %.c *.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(EXTRACFLAGS) -c $< -o $@
 
-dump1090.o: CFLAGS += `pkg-config --cflags librtlsdr libusb-1.0`
-
-dump1090: dump1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o crc.o demod_2400.o stats.o cpr.o icao_filter.o track.o util.o convert.o $(COMPAT)
-	$(CC) -g -o $@ $^ $(LIBS) $(LIBS_RTL) $(LDFLAGS)
-
-view1090: view1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o crc.o stats.o cpr.o icao_filter.o track.o util.o $(COMPAT)
-	$(CC) -g -o $@ $^ $(LIBS) $(LDFLAGS)
-
-beastblackbox: beastblackbox.o anet.o interactive.o mode_ac.o mode_s.o net_io.o crc.o stats.o cpr.o icao_filter.o track.o util.o $(COMPAT)
+beastblackbox: beastblackbox.o anet.o mode_ac.o mode_s.o net_io.o crc.o stats.o cpr.o icao_filter.o track.o util.o $(COMPAT)
 	$(CC) -g -o $@ $^ $(LIBS_LOW) $(LDFLAGS)
-
-faup1090: faup1090.o anet.o mode_ac.o mode_s.o net_io.o crc.o stats.o cpr.o icao_filter.o track.o util.o $(COMPAT)
-	$(CC) -g -o $@ $^ $(LIBS) $(LDFLAGS)
 
 clean:
 	rm -f *.o compat/clock_gettime/*.o compat/clock_nanosleep/*.o dump1090 view1090 faup1090 cprtests crctests
