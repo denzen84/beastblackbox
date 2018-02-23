@@ -117,7 +117,7 @@ void showHelp(void) {
 "| BEAST black box utility                                             v0.995a|\n"
 "-----------------------------------------------------------------------------\n"
  
-  "--ifile <file>           File to proceed\n"
+  "--filename <file>           File to proceed\n"
   "--modeac                 Enable decoding of SSR modes 3/A & 3/C\n"
   "--sbs-output             Show messages in SBS format\n"
   "--show-only <addr>       Show only messages from the given ICAO\n"
@@ -476,7 +476,7 @@ int readbeastfile() {
 	ssize_t i,k,ret_in,seek;
     char buffer[BUF_SIZE];
 	struct stat sb;
-	uint64_t  j, global;
+	long long unsigned  j, global;
 	
 	char beastmessage[MAX_MSG_LEN];
 		
@@ -569,7 +569,7 @@ int main(int argc, char **argv) {
 		
 		if (!strcmp(argv[j],"--modeac")) {
             Modes.mode_ac = 1;
-		} else if (!strcmp(argv[j],"--ifile") && more) {
+		} else if (!strcmp(argv[j],"--filename") && more) {
 		    Modes.filename = strdup(argv[++j]);
 		} else if (!strcmp(argv[j],"--show-only") && more) {
             Modes.show_only = (uint32_t) strtoul(argv[++j], NULL, 16);
