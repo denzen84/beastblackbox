@@ -354,7 +354,14 @@ struct {                             // Internal state
     char *html_dir;                  // Path to www base directory.
     int   json_location_accuracy;    // Accuracy of location metadata: 0=none, 1=approx, 2=exact
     int   throttle;                  // When reading from a file, throttle file playback to realtime?
-
+	
+	// added for beast black box utility
+	uint64_t firsttimestampMsg;	     // Timestamp of the first message (12MHz clock)
+	uint64_t previoustimestampMsg;   // Timestamp of the last message (12MHz clock)
+	struct timespec baseTime;        // Base time (UNIX format) to calculate relative time for messages using MLAT timestamps
+	int useLocaltime;                // Trigger UTC/local user time
+    // ---------------------------------
+	
     int   json_aircraft_history_next;
     struct {
         char *content;

@@ -1548,7 +1548,7 @@ void displayModesMessage(struct modesMessage *mm) {
         if (mm->timestampMsg == MAGIC_MLAT_TIMESTAMP)
             printf("This is a synthetic MLAT message.\n");
         else
-            printf("Time: %.2fus\n", mm->timestampMsg / 12.0);
+            printf("Time: %.2fus, relative: +%.3fs prev message, +%.3fs log start\n", mm->timestampMsg / 12.0, ((mm->timestampMsg - Modes.previoustimestampMsg) / 12000000.0), ((mm->timestampMsg - Modes.firsttimestampMsg) / 12000000.0));
     }
 
     switch (mm->msgtype) {
@@ -1803,6 +1803,7 @@ void useModesMessage(struct modesMessage *mm) {
     // In non-interactive non-quiet mode, display messages on standard output
     if (!Modes.interactive && !Modes.quiet && (!Modes.show_only || mm->addr == Modes.show_only)) {
         displayModesMessage(mm);
+		if (mm->timestampMsg) Modes.previoustimestampMsg = mm->timestampMsg;
     }
 
     // Feed output clients.

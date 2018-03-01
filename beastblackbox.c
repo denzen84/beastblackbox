@@ -72,6 +72,10 @@ void view1090InitConfig(void) {
     Modes.quiet                   = 0;
     Modes.maxRange                = 1852 * 450; // 300NM default max range
     Modes.mode_ac = 1;
+	Modes.baseTime.tv_sec         = 0;
+	Modes.baseTime.tv_nsec        = 0;
+	Modes.useLocaltime            = 0;
+	
     
 }
 //
@@ -114,16 +118,19 @@ void view1090Init(void) {
 void showHelp(void) {
     printf(
 "-----------------------------------------------------------------------------\n"
-"| BEAST black box utility                                             v0.995a|\n"
+"| BEAST: black box utility                                            v0.996a|\n"
 "-----------------------------------------------------------------------------\n"
  
-  "--filename <file>           File to proceed\n"
-  "--modeac                 Enable decoding of SSR modes 3/A & 3/C\n"
+  "--filename <file>        Source file to proceed\n"
+  "--extract <file>         Extract BEAST data to new file (if no filter specified it just copy source)\n"
+  "--init-time-unix <sec>   Start time (UNIX format) to calculate message realtime using MLAT timestamps\n"
+  "--localtime              Decode time as local time (default is UTC)\n"
   "--sbs-output             Show messages in SBS format\n"
-  "--show-only <addr>       Show only messages from the given ICAO\n"
-  "--max-messages <count>   Limit messages count (from start of the file)\n"
+  "--filter-icao <addr>     Show only messages from the given ICAO\n"
+  "--max-messages <count>   Limit messages count (from the start of the file)\n"
   "--show-progress          Show progress during file operation\n"
   "\nAdditional BEAST options:\n"
+  "--modeac                 Enable decoding of SSR modes 3/A & 3/C\n"
   "--no-crc-check           Disable messages with broken CRC (discouraged)\n"
   "--no-fix                 Disable single-bits error correction using CRC\n"
   "--fix                    Enable single-bits error correction using CRC\n"
@@ -131,6 +138,24 @@ void showHelp(void) {
   "--metric                 Use metric units (meters, km/h, ...)\n\n"
   "--help                   Show this help\n"
     );
+}
+
+static void addMLATtime(struct timespec *baseTime, uint64_t mlatTimestamp) {
+	
+	uint64_t mlat_realtime;
+	
+	mlat_realtime = mlatTimestamp / 12;
+	//printf("%llu\n",(unsigned long long) mlat_realtime);
+	
+	baseTime->tv_nsec += 1000 * (mlat_realtime % 1000000);
+	
+	if (baseTime->tv_nsec > 999999999) {
+		baseTime->tv_sec++;
+		baseTime->tv_nsec -= 999999999;
+	}
+	
+	baseTime->tv_sec += mlat_realtime / 1000000;
+	
 }
 
 //
@@ -205,7 +230,8 @@ static void modesSendSBSOutput(struct modesMessage *mm) {
     localtime_r(&now.tv_sec, &stTime_now);
 
     // Find message reception time
-    localtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
+	if (Modes.useLocaltime) localtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive); 
+	else gmtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
 
     // Fields 7 & 8 are the message reception time and date
     p += sprintf(p, "%04d/%02d/%02d,", (stTime_receive.tm_year+1900),(stTime_receive.tm_mon+1), stTime_receive.tm_mday);
@@ -349,8 +375,10 @@ int decodeBinMessage(char *p) {
     unsigned char msg[MODES_LONG_MSG_BYTES];
     static struct modesMessage zeroMessage;
     struct modesMessage mm;
+		
     memset(&mm, 0, sizeof(mm));
-                               
+        
+		
 
     ch = *p++; /// Get the message type
     if (0x1A == ch) {ch=*p++;}   
@@ -376,9 +404,15 @@ int decodeBinMessage(char *p) {
             mm.timestampMsg = mm.timestampMsg << 8 | (ch & 255);
             if (0x1A == ch) {p++;}
         }
+		
+		mm.sysTimestampMsg.tv_nsec = Modes.baseTime.tv_nsec;
+		mm.sysTimestampMsg.tv_sec = Modes.baseTime.tv_sec;
+	    addMLATtime(&mm.sysTimestampMsg, (mm.timestampMsg - Modes.firsttimestampMsg));
+		
+
 
         // record reception time as the time we read it.
-        clock_gettime(CLOCK_REALTIME, &mm.sysTimestampMsg);
+        //clock_gettime(CLOCK_REALTIME, &mm.sysTimestampMsg);
 
         ch = *p++;  // Grab the signal level
         mm.signalLevel = ((unsigned char)ch / 255.0);
@@ -472,10 +506,10 @@ static int copyBinMessageSafe(char *p, int limit, char *out) {
 int readbeastfile() {
 
     int input_bb;   
-    
 	ssize_t i,k,ret_in,seek;
     char buffer[BUF_SIZE];
 	struct stat sb;
+	char *p;
 	long long unsigned  j, global;
 	
 	char beastmessage[MAX_MSG_LEN];
@@ -488,14 +522,38 @@ int readbeastfile() {
     }
 	
    fstat(input_bb, &sb);
-
-    seek = 0;
-	global = 0;
-	j = 0;
-	
+   
 		
     ret_in = read (input_bb, &buffer[0], BUF_SIZE);
-
+	
+	// Scan for header here ---------------------------------------------------
+	// Now we only read first beast message and get it MLAT timestamp to relative
+	// time calculations.
+	k = 0;
+	
+	while(k < ret_in) {
+	i = copyBinMessageSafe(&buffer[k], BUF_SIZE, &beastmessage[0]);
+	if(i > 0) {
+	Modes.firsttimestampMsg = 0;
+	p = &beastmessage[2];
+	
+	for (j = 0; j < 6; j++) {   
+	
+            Modes.firsttimestampMsg = Modes.firsttimestampMsg << 8 | (*p & 255);
+            if (0x1A == *p) {p++;}
+			p++;
+        }
+	if (Modes.firsttimestampMsg) {
+		Modes.previoustimestampMsg = Modes.firsttimestampMsg;
+		break;
+	}
+	} else k ++;
+	}
+	// ------------------------------------------------------------------------
+	
+	j = 0;
+	seek = 0;
+	global = 0;
 	
 	while(ret_in > 0) {
 	
@@ -556,6 +614,7 @@ int readbeastfile() {
 int main(int argc, char **argv) {
     // Initialization
     int j;
+	double t;
 
     view1090InitConfig();
     view1090Init();
@@ -569,9 +628,14 @@ int main(int argc, char **argv) {
 		
 		if (!strcmp(argv[j],"--modeac")) {
             Modes.mode_ac = 1;
-		} else if (!strcmp(argv[j],"--filename") && more) {
+		} else if (!strcmp(argv[j],"--localtime")) {
+            Modes.useLocaltime = 1; 
+		} else if (!strcmp(argv[j],"--init-time-unix") && more) {
+			Modes.baseTime.tv_nsec = (int) (1000000000 * modf(atof(argv[++j]),&t));
+			Modes.baseTime.tv_sec = (int) t;
+	    } else if (!strcmp(argv[j],"--filename") && more) {
 		    Modes.filename = strdup(argv[++j]);
-		} else if (!strcmp(argv[j],"--show-only") && more) {
+		} else if (!strcmp(argv[j],"filter-icao") && more) {
             Modes.show_only = (uint32_t) strtoul(argv[++j], NULL, 16);
             Modes.interactive = 0;
         } else if (!strcmp(argv[j],"--max-messages") && more) {
