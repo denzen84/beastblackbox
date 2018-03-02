@@ -66,17 +66,16 @@ void view1090InitConfig(void) {
     Modes.check_crc               = 1;
 	Modes.throttle                = 0;
 	Modes.filename                = NULL;
+	Modes.filename_extract        = NULL;
     Modes.interactive_rows        = 60;
     Modes.interactive_display_ttl = 0;
     Modes.interactive             = 0;
     Modes.quiet                   = 0;
     Modes.maxRange                = 1852 * 450; // 300NM default max range
-    Modes.mode_ac = 1;
+    Modes.mode_ac 				  = 0;
 	Modes.baseTime.tv_sec         = 0;
 	Modes.baseTime.tv_nsec        = 0;
-	Modes.useLocaltime            = 0;
-	
-    
+	Modes.useLocaltime            = 0;   
 }
 //
 //=========================================================================
@@ -125,9 +124,9 @@ void showHelp(void) {
   "--extract <file>         Extract BEAST data to new file (if no filter specified it just copy source)\n"
   "--init-time-unix <sec>   Start time (UNIX format) to calculate message realtime using MLAT timestamps\n"
   "--localtime              Decode time as local time (default is UTC)\n"
-  "--sbs-output             Show messages in SBS format\n"
   "--filter-icao <addr>     Show only messages from the given ICAO\n"
   "--max-messages <count>   Limit messages count (from the start of the file)\n"
+  "--sbs-output             Show messages in SBS format\n"
   "--show-progress          Show progress during file operation\n"
   "\nAdditional BEAST options:\n"
   "--modeac                 Enable decoding of SSR modes 3/A & 3/C\n"
@@ -140,22 +139,21 @@ void showHelp(void) {
     );
 }
 
-static void addMLATtime(struct timespec *baseTime, uint64_t mlatTimestamp) {
+static void addMLATtime(struct timespec *msgTime, uint64_t mlatTimestamp) {
 	
 	uint64_t mlat_realtime;
 	
 	mlat_realtime = mlatTimestamp / 12;
 	//printf("%llu\n",(unsigned long long) mlat_realtime);
 	
-	baseTime->tv_nsec += 1000 * (mlat_realtime % 1000000);
+	msgTime->tv_nsec += 1000 * (mlat_realtime % 1000000);
 	
-	if (baseTime->tv_nsec > 999999999) {
-		baseTime->tv_sec++;
-		baseTime->tv_nsec -= 999999999;
+	if (msgTime->tv_nsec > 999999999) {
+		msgTime->tv_sec++;
+		msgTime->tv_nsec -= 999999999;
 	}
 	
-	baseTime->tv_sec += mlat_realtime / 1000000;
-	
+	msgTime->tv_sec += mlat_realtime / 1000000;	
 }
 
 //
@@ -444,6 +442,7 @@ int decodeBinMessage(char *p) {
         }
 
 		//if (Modes.interactive_rtl1090) 
+		Modes.last_addr = mm.addr;
 		useModesMessage(&mm);
 		if(Modes.quiet) modesSendSBSOutput(&mm);
     }
@@ -505,26 +504,32 @@ static int copyBinMessageSafe(char *p, int limit, char *out) {
 
 int readbeastfile() {
 
-    int input_bb;   
-	ssize_t i,k,ret_in,seek;
+    int input_bb, output_bb;   
+	ssize_t i,k,ret_in, ret_out, seek;
     char buffer[BUF_SIZE];
 	struct stat sb;
 	char *p;
-	long long unsigned  j, global;
-	
+	long long unsigned  j, js, global;
 	char beastmessage[MAX_MSG_LEN];
 		
- 
+	output_bb = -1;
+	
     input_bb = open(Modes.filename, O_RDONLY);
     if (input_bb == -1) {
             fprintf(stderr, "Error. Unable to open file %s\n",Modes.filename);
             return 2;
     }
 	
+	if (Modes.filename_extract != NULL) {
+	output_bb = open(Modes.filename_extract, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		if (output_bb == -1) {
+            fprintf(stderr, "Error. Unable to open for write file %s\n",Modes.filename_extract);
+            return 2;
+		}
+	}
+	
    fstat(input_bb, &sb);
-   
-		
-    ret_in = read (input_bb, &buffer[0], BUF_SIZE);
+   ret_in = read (input_bb, &buffer[0], BUF_SIZE);
 	
 	// Scan for header here ---------------------------------------------------
 	// Now we only read first beast message and get it MLAT timestamp to relative
@@ -532,7 +537,9 @@ int readbeastfile() {
 	k = 0;
 	
 	while(k < ret_in) {
-	i = copyBinMessageSafe(&buffer[k], BUF_SIZE, &beastmessage[0]);
+	
+	i = copyBinMessageSafe(&buffer[k], BUF_SIZE - k, &beastmessage[0]);
+	
 	if(i > 0) {
 	Modes.firsttimestampMsg = 0;
 	p = &beastmessage[2];
@@ -546,16 +553,19 @@ int readbeastfile() {
 	if (Modes.firsttimestampMsg) {
 		Modes.previoustimestampMsg = Modes.firsttimestampMsg;
 		break;
-	}
-	} else k ++;
+	} else k++;
+	
+	} else k++;
+	
 	}
 	// ------------------------------------------------------------------------
 	
 	j = 0;
+	js = 0;
 	seek = 0;
 	global = 0;
 	
-	while(ret_in > 0) {
+	while((ret_in > 0) && (Modes.exit != 1)) {
 	
 	k = 0;
 	
@@ -576,6 +586,16 @@ int readbeastfile() {
 	decodeBinMessage(&beastmessage[0]);
 	
 	if (Modes.interactive_display_ttl && (j==Modes.interactive_display_ttl)) {goto EXIT_LIMIT; }
+	
+	if ((output_bb != -1) && ((!Modes.show_only || Modes.last_addr == Modes.show_only) || (Modes.show_only==0))) {
+		ret_out = write (output_bb, &beastmessage[0], (ssize_t) i);
+		
+		if (ret_out != i) {
+		fprintf(stderr, "Error. Write error in file %s\n",Modes.filename_extract);
+        return 2;	
+		}
+		js++;
+	}
 	
 	k+=i;
 	global+=i;
@@ -599,11 +619,14 @@ int readbeastfile() {
 	}
 	
 	EXIT_LIMIT:
-	printf("\nTotal processed %llu messages\n", j);
-   
+	printf("\n");
+	if (js) printf("Extracted %llu messages\n", js);
+	printf("Total processed %llu messages\n", j);
+    
 
    
     close (input_bb);
+	close (output_bb);
 
     return 0;
 }
@@ -635,7 +658,9 @@ int main(int argc, char **argv) {
 			Modes.baseTime.tv_sec = (int) t;
 	    } else if (!strcmp(argv[j],"--filename") && more) {
 		    Modes.filename = strdup(argv[++j]);
-		} else if (!strcmp(argv[j],"filter-icao") && more) {
+		} else if (!strcmp(argv[j],"--extract") && more) {
+		    Modes.filename_extract = strdup(argv[++j]);			
+		} else if (!strcmp(argv[j],"--filter-icao") && more) {
             Modes.show_only = (uint32_t) strtoul(argv[++j], NULL, 16);
             Modes.interactive = 0;
         } else if (!strcmp(argv[j],"--max-messages") && more) {
@@ -672,12 +697,13 @@ int main(int argc, char **argv) {
     }
 	
 	if (Modes.filename == NULL) {
-			fprintf(stderr, "No file specified. Nothing to do. Use --ifile option.\n\n");
             showHelp();
+			fprintf(stderr, "\nERROR: no file specified. Nothing to do. Use --filename option.\n\n");
             exit(1);		
 	}
 	
     readbeastfile();
+	
     	
     return (0);
 }

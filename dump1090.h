@@ -242,7 +242,7 @@ typedef enum {
 
 #include "util.h"
 #include "anet.h"
-#include "net_io.h"
+//#include "net_io.h"
 #include "crc.h"
 #include "demod_2400.h"
 #include "stats.h"
@@ -298,7 +298,7 @@ struct {                             // Internal state
 #ifdef HAVE_RTL_BIAST
     int           enable_rtlsdr_biast;
 #endif
-
+/*
     // Networking
     char           aneterr[ANET_ERR_LEN];
     struct net_service *services;    // Active services
@@ -308,7 +308,7 @@ struct {                             // Internal state
     struct net_writer beast_out;     // Beast-format output
     struct net_writer sbs_out;       // SBS-format output
     struct net_writer fatsv_out;     // FATSV-format output
-
+*/
 #ifdef _WIN32
     WSADATA        wsaData;          // Windows socket initialisation
 #endif
@@ -360,6 +360,8 @@ struct {                             // Internal state
 	uint64_t previoustimestampMsg;   // Timestamp of the last message (12MHz clock)
 	struct timespec baseTime;        // Base time (UNIX format) to calculate relative time for messages using MLAT timestamps
 	int useLocaltime;                // Trigger UTC/local user time
+	char *filename_extract;          // Output to file, --extract option
+	uint32_t last_addr;                    // Flag to save BEAST message to output --extract option
     // ---------------------------------
 	
     int   json_aircraft_history_next;
@@ -575,7 +577,7 @@ void useModesMessage    (struct modesMessage *mm);
 //
 // Functions exported from interactive.c
 //
-void  interactiveShowData(void);
+//void  interactiveShowData(void);
 
 #ifdef __cplusplus
 }

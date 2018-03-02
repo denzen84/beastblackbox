@@ -1547,8 +1547,10 @@ void displayModesMessage(struct modesMessage *mm) {
     if (mm->timestampMsg) {
         if (mm->timestampMsg == MAGIC_MLAT_TIMESTAMP)
             printf("This is a synthetic MLAT message.\n");
-        else
-            printf("Time: %.2fus, relative: +%.3fs prev message, +%.3fs log start\n", mm->timestampMsg / 12.0, ((mm->timestampMsg - Modes.previoustimestampMsg) / 12000000.0), ((mm->timestampMsg - Modes.firsttimestampMsg) / 12000000.0));
+        else {
+            printf("Time: %.2fus", mm->timestampMsg / 12.0);
+			printf(", relative: %+.3fs prev message, %+.3fs log start\n",((mm->timestampMsg - Modes.previoustimestampMsg) / 12000000.0), ((mm->timestampMsg - Modes.firsttimestampMsg) / 12000000.0));
+		}
     }
 
     switch (mm->msgtype) {
@@ -1793,12 +1795,12 @@ void displayModesMessage(struct modesMessage *mm) {
 // processing and visualization
 //
 void useModesMessage(struct modesMessage *mm) {
-    struct aircraft *a;
+ //   struct aircraft *a;
 
     ++Modes.stats_current.messages_total;
 
     // Track aircraft state
-    a = trackUpdateFromMessage(mm);
+    //a = trackUpdateFromMessage(mm);
 
     // In non-interactive non-quiet mode, display messages on standard output
     if (!Modes.interactive && !Modes.quiet && (!Modes.show_only || mm->addr == Modes.show_only)) {
@@ -1810,7 +1812,7 @@ void useModesMessage(struct modesMessage *mm) {
     // If in --net-verbatim mode, do this for all messages.
     // Otherwise, apply a sanity-check filter and only
     // forward messages when we have seen two of them.
-
+/*
     if (Modes.net) {
         if (Modes.net_verbatim || mm->msgtype == 32) {
             // Unconditionally send
@@ -1825,6 +1827,7 @@ void useModesMessage(struct modesMessage *mm) {
             modesQueueOutput(mm, a);
         }
     }
+*/
 }
 
 //

@@ -49,7 +49,7 @@ all: beastblackbox
 %.o: %.c *.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(EXTRACFLAGS) -c $< -o $@
 
-beastblackbox: beastblackbox.o anet.o mode_ac.o mode_s.o net_io.o crc.o stats.o cpr.o icao_filter.o track.o util.o $(COMPAT)
+beastblackbox: beastblackbox.o anet.o mode_ac.o mode_s.o crc.o stats.o cpr.o icao_filter.o track.o util.o $(COMPAT)
 	$(CC) -g -o $@ $^ $(LIBS_LOW) $(LDFLAGS)
 
 clean:
