@@ -46,7 +46,7 @@ exit 0
 This script will save UTC Unix timestamp in the filename and will give opportunity to get realtime stamps using _--init-unix-time_ command line option.
 
 ## Compiling and building
-It's only tested on OrangePi boards based on H3 (32 bit ARM) and H5 (64 ARM) under Armbian 5.34+ (Debian Jessie and Debian Stretch). In this regard, there are no obstacles that cause problems with building on all Debian-based systems like Raspbian for Raspberry Pi. 
+It's only tested on OrangePi boards based on H3 (32 bit ARM) and H5 (64 bit ARM) under Armbian 5.34+ (Debian Jessie and Debian Stretch). In this regard, there are no obstacles that cause problems with building on all Debian-based systems like Raspbian for Raspberry Pi. 
 
 ```
 cd ~
