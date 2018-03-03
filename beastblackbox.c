@@ -121,14 +121,14 @@ void showHelp(void) {
 "-----------------------------------------------------------------------------\n"
  
   "--filename <file>        Source file to proceed\n"
-  "--extract <file>         Extract BEAST data to new file (if no filter specified it just copy source)\n"
+  "--extract <file>         Extract BEAST data to new file (if no filter specified it just copies source)\n"
   "--init-time-unix <sec>   Start time (UNIX format) to calculate message realtime using MLAT timestamps\n"
   "--localtime              Decode time as local time (default is UTC)\n"
   "--filter-icao <addr>     Show only messages from the given ICAO\n"
   "--max-messages <count>   Limit messages count (from the start of the file)\n"
   "--sbs-output             Show messages in SBS format\n"
-  "--show-progress          Show progress during file operation\n"
-  "\nAdditional BEAST options:\n"
+  "--show-progress          Show progress during file operation\n\n"
+  "Additional BEAST options:\n"
   "--modeac                 Enable decoding of SSR modes 3/A & 3/C\n"
   "--no-crc-check           Disable messages with broken CRC (discouraged)\n"
   "--no-fix                 Disable single-bits error correction using CRC\n"
@@ -565,7 +565,7 @@ int readbeastfile() {
 	seek = 0;
 	global = 0;
 	
-	while((ret_in > 0) && (Modes.exit != 1)) {
+	while((ret_in > 0) && (!Modes.exit)) {
 	
 	k = 0;
 	
