@@ -45,6 +45,16 @@ exit 0
 
 This script will save UTC Unix timestamp in the filename and will give opportunity to get realtime stamps using _--init-unix-time_ command line option.
 
+## Compiling and buildnig
+It's only tested on OrangePi boards based on H3 (32 bit ARM) and H5 (64 ARM) under Armbian 5.34+ (Debian Jessie and Debian Stretch).
+
+```
+cd ~
+git clone https://github.com/denzen84/beastblackbox.git
+cd beastblackbox
+make
+```
+
 ## Usage examples
 ###### Example 1
 
