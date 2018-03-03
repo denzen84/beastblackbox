@@ -3,7 +3,7 @@
 BEAST black box utility is command line tool that useful to decode ModeS and ModeA/C information stored in binary BEAST format in the file. Utility based on the source code of dump1090 and inherits all benefits of this tool. In other words, it is dump1090 code that reads binary BEAST data from the file instead of network or RTL-dongle as it does original dump1090.
 ## Main features
 1. Decode information from binary BEAST format in two ways: dump1090-style view or SBS text format
-2. Extract binary BEAST packets according to the filter to another file
+2. Extract binary BEAST messages according to the filter to another file
 3. Filter by ICAO address
 4. Decode MLAT timestamps in two ways: relative time and realtime (for second option it needs to have realtime information in UNIX time format for the first file record).
 ## Command line keys and options
