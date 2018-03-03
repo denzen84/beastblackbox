@@ -7,7 +7,8 @@ BEAST black box utility is command line tool that useful to decode ModeS and Mod
 3. Filter by ICAO address
 4. Decode MLAT timestamps in two ways: relative time and realtime (for second option it need realtime information in UNIX time format for the first file record).
 ## Command line keys and options
---filename <file>        Source file to proceed
+```
+--filename <file>        Source file to proceed
 --extract <file>         Extract BEAST data to new file (if no filter specified it just copies source)
 --init-time-unix <sec>   Start time (UNIX format) to calculate message realtime using MLAT timestamps
 --localtime              Decode time as local time (default is UTC)
@@ -15,3 +16,32 @@ BEAST black box utility is command line tool that useful to decode ModeS and Mod
 --max-messages <count>   Limit messages count (from the start of the file)
 --sbs-output             Show messages in SBS format
 --show-progress          Show progress during file operation
+```
+
+__Example 1:__
+
+```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --max-messages 1000```
+Decodes first 1000 messages of the file _radar-ulss7-beast-bin-utc--1520012558.147403028.log_ and outputs information in dump1090-style.
+
+Example output is:
+
+```
+*8f4001599909ba0e3804c5ad7195;
+CRC: 000000
+RSSI: -15.1 dBFS
+Time: 1848344928531.42us, relative: +0.010s prev message, +1.072s log start
+DF:17 AA:400159 CA:7 ME:9909BA0E3804C5
+ Extended Squitter Airborne velocity over ground, subsonic (19/1)
+  ICAO Address:  400159 (Mode S / ADS-B)
+  Air/Ground:    airborne?
+  GNSS delta:    -1700 ft
+  Heading:       76
+  Speed:         455 kt groundspeed
+  Vertical rate: 0 ft/min GNSS
+```
+
+
+__Example 2:__
+
+```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --max-messages 1000 --```
+Decodes first 1000 messages of the file _radar-ulss7-beast-bin-utc--1520012558.147403028.log_
