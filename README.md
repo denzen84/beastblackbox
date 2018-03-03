@@ -17,7 +17,7 @@ BEAST black box utility is command line tool that useful to decode ModeS and Mod
 --sbs-output             Show messages in SBS format
 --show-progress          Show progress during file operation
 ```
-
+## Usage examples
 ###### Example 1
 
 ```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --max-messages 1000```
@@ -71,3 +71,17 @@ MSG,5,1,1,4249C6,1,1970/01/01,00:00:00.970,2018/03/03,20:19:24.873,UTA469  ,1702
 
 Total processed 277 messages
 ```
+
+###### Example 4
+
+```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --sbs-output --filter-icao 4249c6 --init-time-unix 1520012558.147403028```
+
+The same as Example 3, but timestamps are calculated relative to Unix time 1520012558.147403028 (Fri, 02 Mar 2018 17:42:38.147403028 GMT):
+
+```
+MSG,3,1,1,4249C6,1,__2018/03/02,17:42:38.185__,2018/03/03,20:28:25.944,,17050,,,,,,,,,,0
+MSG,4,1,1,4249C6,1,__2018/03/02,17:42:38.185__,2018/03/03,20:28:25.944,,,307,259,,,-1600,,,,,0
+MSG,1,1,1,4249C6,1,__2018/03/02,17:42:38.340__,2018/03/03,20:28:25.944,UTA469  ,,,,,,,,,,,0
+MSG,8,1,1,4249C6,1,__2018/03/02,17:42:38.390__,2018/03/03,20:28:25.945,,,,,,,,,,,,0
+```
+
