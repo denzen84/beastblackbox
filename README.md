@@ -76,7 +76,7 @@ Total processed 277 messages
 
 ```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --sbs-output --filter-icao 4249c6 --init-time-unix 1520012558.147403028```
 
-The same as Example 3, but timestamps are calculated relative to Unix time 1520012558.147403028 (Fri, 02 Mar 2018 17:42:38.147403028 GMT):
+The same as Example 3, but realtime stamps are calculated relative to Unix time 1520012558.147403028 (Fri, 02 Mar 2018 17:42:38.147403028 GMT) instead of default time Unix time 0.0 (Thu, 01 Jan 1970 00:00:00 GMT):
 
 ```
 MSG,3,1,1,4249C6,1,2018/03/02,17:42:38.185,2018/03/03,20:28:25.944,,17050,,,,,,,,,,0
@@ -85,3 +85,8 @@ MSG,1,1,1,4249C6,1,2018/03/02,17:42:38.340,2018/03/03,20:28:25.944,UTA469  ,,,,,
 MSG,8,1,1,4249C6,1,2018/03/02,17:42:38.390,2018/03/03,20:28:25.945,,,,,,,,,,,,0
 ```
 
+###### Example 5
+
+```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --sbs-output --filter-icao 4249c6 --init-time-unix 1520012558.147403028 --localtime```
+
+The same as Example 4, but realtime stamps are calculated in user locale insted of UTC.
