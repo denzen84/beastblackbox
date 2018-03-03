@@ -16,6 +16,16 @@ BEAST black box utility is command line tool that useful to decode ModeS and Mod
 --max-messages <count>   Limit messages count (from the start of the file)
 --sbs-output             Show messages in SBS format
 --show-progress          Show progress during file operation
+
+Additional BEAST options:
+--modeac                 Enable decoding of SSR modes 3/A & 3/C
+--no-crc-check           Disable messages with broken CRC (discouraged)
+--no-fix                 Disable single-bits error correction using CRC
+--fix                    Enable single-bits error correction using CRC
+--aggressive             More CPU for more messages (two bits fixes, ...)
+--metric                 Use metric units (meters, km/h, ...)
+
+--help                   Show this help
 ```
 ## Useful advices to log binary BEAST traffic
 To save binary BEAST traffic from dump1090 to the file in Linux-based systems, the most simple way is to use _netcat_ utility as below:
