@@ -129,7 +129,7 @@ MSG,8,1,1,4249C6,1,2018/03/02,17:42:38.390,2018/03/03,20:28:25.945,,,,,,,,,,,,0
 
 ```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --sbs-output --filter-icao 4249c6 --init-time-unix 1520012558.147403028 --localtime```
 
-The same as Example 4, but realtime stamps are calculated in user locale insted of UTC.
+The same as Example 4, but realtime stamps are calculated in user locale instead of UTC.
 
 ###### Example 6
 
