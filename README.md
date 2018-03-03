@@ -17,6 +17,24 @@ BEAST black box utility is command line tool that useful to decode ModeS and Mod
 --sbs-output             Show messages in SBS format
 --show-progress          Show progress during file operation
 ```
+## Useful advices to log binary BEAST traffic
+To save binary BEAST traffic from dump1090 to the file in Linux-based systems, the most simple way is to use _netcat_ utility as below:
+
+```nc 127.0.0.1 30005 > radar-ulss7-beast-bin.log```
+
+But this method has one disadvantage. It will lost information about realtime and all messages timestamps could be only decoded as relative time. To avoid this it could be useful to use script:
+```
+#!/bin/bash
+foldname=`date +%s.%N`
+radar="ULSS7"
+
+nc 127.0.0.1 30005 > $foldname-$radar-beast-bin.log &
+
+exit 0
+```
+
+This script will save UTC Unix timestamp in the filename and it will give opportunity to get realtime stamps using _--init-unix-time_ command line option.
+
 ## Usage examples
 ###### Example 1
 
