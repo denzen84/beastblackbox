@@ -43,5 +43,7 @@ DF:17 AA:400159 CA:7 ME:9909BA0E3804C5
 
 __Example 2:__
 
-```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --max-messages 1000 --```
-Decodes first 1000 messages of the file _radar-ulss7-beast-bin-utc--1520012558.147403028.log_
+```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --max-messages 1000 --sbs-output```
+The same as Example 1, buttputs information in SBS format:
+
+```MSG,4,1,1,406B05,1,1970/01/01,00:00:01.048,2018/03/03,20:16:35.898,,,497,77,,,64,,,,,0```
