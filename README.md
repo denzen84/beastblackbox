@@ -33,7 +33,7 @@ nc 127.0.0.1 30005 > $foldname-$radar-beast-bin.log &
 exit 0
 ```
 
-This script will save UTC Unix timestamp in the filename and it will give opportunity to get realtime stamps using _--init-unix-time_ command line option.
+This script will save UTC Unix timestamp in the filename and will give opportunity to get realtime stamps using _--init-unix-time_ command line option.
 
 ## Usage examples
 ###### Example 1
