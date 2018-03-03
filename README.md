@@ -5,7 +5,7 @@ BEAST black box utility is command line tool that useful to decode ModeS and Mod
 1. Decode information from binary BEAST format in two ways: dump1090-style view or SBS text format
 2. Extract binary BEAST packets according to the filter to another file
 3. Filter by ICAO address
-4. Decode MLAT timestamps in two ways: relative time and realtime (for second option it need realtime information in UNIX time format for the first file record).
+4. Decode MLAT timestamps in two ways: relative time and realtime (for second option it needs to have realtime information in UNIX time format for the first file record).
 ## Command line keys and options
 ```
 --filename <file>        Source file to proceed
