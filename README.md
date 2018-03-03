@@ -21,6 +21,7 @@ BEAST black box utility is command line tool that useful to decode ModeS and Mod
 ###### Example 1
 
 ```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --max-messages 1000```
+
 Decodes first 1000 messages of the file _radar-ulss7-beast-bin-utc--1520012558.147403028.log_ and outputs information in dump1090-style.
 
 Example output is:
@@ -44,6 +45,7 @@ DF:17 AA:400159 CA:7 ME:9909BA0E3804C5
 ###### Example 2
 
 ```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --max-messages 1000 --sbs-output```
+
 The same as Example 1, but outputs information in SBS format:
 
 ```MSG,4,1,1,406B05,1,1970/01/01,00:00:01.048,2018/03/03,20:16:35.898,,,497,77,,,64,,,,,0```
@@ -51,6 +53,7 @@ The same as Example 1, but outputs information in SBS format:
 ###### Example 3
 
 ```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --sbs-output --filter-icao 4249c6```
+
 The same as Example 2, but outputs information in SBS format only for ICAO 4249c6:
 
 ```
