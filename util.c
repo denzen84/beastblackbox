@@ -48,14 +48,19 @@
 //   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "util.h"
-#include "dump1090.h"
+
 #include <stdlib.h>
 #include <sys/time.h>
 
 uint64_t mstime(void)
 {
-	//printf("%llu\n", Modes.currentTime_ms);
-    return Modes.currentTime_ms;
+    struct timeval tv;
+    uint64_t mst;
+
+    gettimeofday(&tv, NULL);
+    mst = ((uint64_t)tv.tv_sec)*1000;
+    mst += tv.tv_usec/1000;
+    return mst;
 }
 
 int64_t receiveclock_ns_elapsed(uint64_t t1, uint64_t t2)
