@@ -115,7 +115,7 @@ struct aircraft *trackFindAircraft(uint32_t addr) {
 static int accept_data(data_validity *d, datasource_t source, uint64_t now)
 {
     if (source < d->source && now < d->stale)
-        return 0;
+        return 1;
 
     d->source = source;
     d->updated = now;
@@ -340,7 +340,7 @@ static int doLocalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now,
     // relative CPR
     // find reference location
     double reflat, reflon;
-    double range_limit = 0;
+    //double range_limit = 0;
     int result;
     int fflag = mm->cpr_odd;
     int surface = (mm->cpr_type == CPR_SURFACE);
@@ -354,7 +354,7 @@ static int doLocalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now,
         if (a->pos_nuc < *nuc)
             *nuc = a->pos_nuc;
 
-        range_limit = 50e3;
+        //range_limit = 50e3;
     } else if (!surface && (Modes.bUserFlags & MODES_USER_LATLON_VALID)) {
         reflat = Modes.fUserLat;
         reflon = Modes.fUserLon;
@@ -367,7 +367,7 @@ static int doLocalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now,
         // ambiguity. (e.g. if we receive a position report
         // at 200NM distance, this may resolve to a position
         // at (200-360) = 160NM in the wrong direction)
-
+/*
         if (Modes.maxRange == 0) {
             return (-1); // Can't do receiver-centered checks at all
         } else if (Modes.maxRange <= 1852*180) {
@@ -377,6 +377,7 @@ static int doLocalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now,
         } else {
             return (-1); // Can't do receiver-centered checks at all
         }
+	*/	
     } else {
         // No local reference, give up
         return (-1);
@@ -391,6 +392,7 @@ static int doLocalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now,
         return result;
     }
 
+/*
     // check range limit
     if (range_limit > 0) {
         double range = greatcircle(reflat, reflon, *lat, *lon);
@@ -399,7 +401,7 @@ static int doLocalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now,
             return (-1);
         }
     }
-/*
+
     // check speed limit
     if (trackDataValid(&a->position_valid) && a->pos_nuc >= *nuc && !speed_check(a, *lat, *lon, now, surface)) {
 #ifdef DEBUG_CPR_CHECKS
@@ -444,18 +446,18 @@ static void updatePosition(struct aircraft *a, struct modesMessage *mm, uint64_t
         // Airborne: 10 seconds
         max_elapsed = 10000;
     }
-
     // If we have enough recent data, try global CPR
     if (trackDataValid(&a->cpr_odd_valid) && trackDataValid(&a->cpr_even_valid) &&
         a->cpr_odd_valid.source == a->cpr_even_valid.source &&
-        a->cpr_odd_type == a->cpr_even_type &&
-        time_between(a->cpr_odd_valid.updated, a->cpr_even_valid.updated) <= max_elapsed) {
+        a->cpr_odd_type == a->cpr_even_type  &&
+        time_between(a->cpr_odd_valid.updated, a->cpr_even_valid.updated) <= max_elapsed ) {
 
         location_result = doGlobalCPR(a, mm, now, &new_lat, &new_lon, &new_nuc);
+	
 
         if (location_result == -2) {
 #ifdef DEBUG_CPR_CHECKS
-            fprintf(stderr, "global CPR failure (invalid) for (%06X).\n", a->addr);
+            printf("global CPR failure (invalid) for (%06X).\n", a->addr);
 #endif
             // Global CPR failed because the position produced implausible results.
             // This is bad data. Discard both odd and even messages and wait for a fresh pair.
@@ -468,7 +470,7 @@ static void updatePosition(struct aircraft *a, struct modesMessage *mm, uint64_t
         } else if (location_result == -1) {
 #ifdef DEBUG_CPR_CHECKS
             if (mm->source == SOURCE_MLAT) {
-                fprintf(stderr, "CPR skipped from MLAT (%06X).\n", a->addr);
+                printf("CPR skipped from MLAT (%06X).\n", a->addr);
             }
 #endif
             // No local reference for surface position available, or the two messages crossed a zone.
@@ -803,13 +805,11 @@ static void trackRemoveStaleAircraft(uint64_t now)
 
 void trackPeriodicUpdate()
 {
-    static uint64_t next_update;
+
+//    static uint64_t next_update;
     uint64_t now = mstime();
 
-    // Only do updates once per second
-    if (now >= next_update) {
-        next_update = now + 1000;
         trackRemoveStaleAircraft(now);
         trackUpdateAircraftModeS();
-    }
+    
 }

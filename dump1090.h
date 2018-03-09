@@ -358,10 +358,11 @@ struct {                             // Internal state
 	// added for beast black box utility
 	uint64_t firsttimestampMsg;	     // Timestamp of the first message (12MHz clock)
 	uint64_t previoustimestampMsg;   // Timestamp of the last message (12MHz clock)
+	uint64_t currentTime_ms;         // "Current" time relative to file
 	struct timespec baseTime;        // Base time (UNIX format) to calculate relative time for messages using MLAT timestamps
 	int useLocaltime;                // Trigger UTC/local user time
 	char *filename_extract;          // Output to file, --extract option
-	uint32_t last_addr;                    // Flag to save BEAST message to output --extract option
+	uint32_t last_addr;              // Flag to save BEAST message to output --extract option
     // ---------------------------------
 	
     int   json_aircraft_history_next;

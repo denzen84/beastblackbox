@@ -403,9 +403,10 @@ int decodeBinMessage(char *p) {
             if (0x1A == ch) {p++;}
         }
 		
-		mm.sysTimestampMsg.tv_nsec = Modes.baseTime.tv_nsec;
-		mm.sysTimestampMsg.tv_sec = Modes.baseTime.tv_sec;
+	    mm.sysTimestampMsg.tv_nsec = Modes.baseTime.tv_nsec;
+	    mm.sysTimestampMsg.tv_sec = Modes.baseTime.tv_sec;
 	    addMLATtime(&mm.sysTimestampMsg, (mm.timestampMsg - Modes.firsttimestampMsg));
+		Modes.currentTime_ms = mm.sysTimestampMsg.tv_sec * 1000 + mm.sysTimestampMsg.tv_nsec / 1000000;
 		
 
 
@@ -466,7 +467,7 @@ static int copyBinMessageSafe(char *p, int limit, char *out) {
 		} else return 0;
 		
 	ch = *p;	
-    if (ch == '1')  {
+    if ((ch == '1') && (Modes.mode_ac)) { // skip ModeA/C unless user enables --modes-ac  {
         msgLen = MODEAC_MSG_BYTES;
 		*out = '1';
 		out++;

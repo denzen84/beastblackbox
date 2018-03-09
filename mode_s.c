@@ -1795,12 +1795,11 @@ void displayModesMessage(struct modesMessage *mm) {
 // processing and visualization
 //
 void useModesMessage(struct modesMessage *mm) {
- //   struct aircraft *a;
-
+    
     ++Modes.stats_current.messages_total;
 
     // Track aircraft state
-    //a = trackUpdateFromMessage(mm);
+    trackUpdateFromMessage(mm);
 
     // In non-interactive non-quiet mode, display messages on standard output
     if (!Modes.interactive && !Modes.quiet && (!Modes.show_only || mm->addr == Modes.show_only)) {
