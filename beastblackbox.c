@@ -406,9 +406,7 @@ int decodeBinMessage(char *p) {
 	    mm.sysTimestampMsg.tv_nsec = Modes.baseTime.tv_nsec;
 	    mm.sysTimestampMsg.tv_sec = Modes.baseTime.tv_sec;
 	    addMLATtime(&mm.sysTimestampMsg, (mm.timestampMsg - Modes.firsttimestampMsg));
-		Modes.currentTime_ms = mm.sysTimestampMsg.tv_sec * 1000 + mm.sysTimestampMsg.tv_nsec / 1000000;
-		
-
+		                                                                          
 
         // record reception time as the time we read it.
         //clock_gettime(CLOCK_REALTIME, &mm.sysTimestampMsg);
