@@ -1,6 +1,6 @@
 # BEAST black box utility
 ## Overview
-BEAST black box utility is command line tool that useful to decode ModeS and ModeA/C information stored in binary BEAST format in the file. Utility is based on the source code of dump1090 and inherits all benefits of this tool. In other words, it is dump1090 code that reads binary BEAST data from the file instead of network or RTL-dongle as it does original dump1090.
+BEAST black box utility is command line tool that decodes ModeS and ModeA/C information stored in binary BEAST format in the file. It's useful to decode BEAST logs from your ADSB receiver/station. BEAST format is very compact and contains source ADSB messages from aircrafts with some additional information. To create BEAST logs in this way there is no need in special utilities - it can be easily created with standars UNIX tools, such as _netcat_. Utility is based on the source code of dump1090 and inherits all benefits of this tool. In other words, it is dump1090 code that reads binary BEAST data from the file instead of network or RTL-dongle as it does original dump1090.
 ## Main features
 1. Decode information from binary BEAST format in two ways: dump1090-style view or SBS text format
 2. Extract binary BEAST messages according to the filter to another file
@@ -8,13 +8,14 @@ BEAST black box utility is command line tool that useful to decode ModeS and Mod
 4. Decode MLAT timestamps in two ways: relative time and realtime (for second option it needs to have realtime information in UNIX time format for the first file record).
 ## Command line keys and options
 ```
---filename <file>        Source file to proceed
---extract <file>         Extract BEAST data to new file (if no filter specified it just copies source)
---init-time-unix <sec>   Start time (UNIX format) to calculate message realtime using MLAT timestamps
---localtime              Decode time as local time (default is UTC)
+--filename <file>        Source file to proceed
+--extract <file>         Extract BEAST data to new file (if no ICAO filter specified it just copies the source)
+--init-time-unix <sec>   Start time (UNIX epoch, format: ss.ms) to calculate realtime using MLAT timestamps
+--localtime              Decode time as local time (default: UTC)
+--sbs-output             Show messages in SBS format (default: dump1090 style)
 --filter-icao <addr>     Show only messages from the given ICAO
---max-messages <count>   Limit messages count (from the start of the file)
---sbs-output             Show messages in SBS format
+--export-kml <file>      Export coordinates and height to KML (works only with --filter-icao)
+--max-messages <count>   Limit messages count from the start of the file (default: all)
 --show-progress          Show progress during file operation
 
 Additional BEAST options:
