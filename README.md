@@ -29,7 +29,7 @@ Additional BEAST options:
 
 --help                   Show this help
 ```
-## Useful advices to log binary BEAST traffic
+## How to log binary BEAST traffic
 To save binary BEAST traffic from dump1090 to the file in Linux-based systems, the most simple way is to use _netcat_ utility as follow:
 
 ```nc 127.0.0.1 30005 > radar-ulss7-beast-bin.log```
