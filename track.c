@@ -4,20 +4,20 @@
 //
 // Copyright (c) 2014-2016 Oliver Jowett <oliver@mutability.co.uk>
 //
-// This file is free software: you may copy, redistribute and/or modify it  
+// This file is free software: you may copy, redistribute and/or modify it
 // under the terms of the GNU General Public License as published by the
-// Free Software Foundation, either version 2 of the License, or (at your  
-// option) any later version.  
+// Free Software Foundation, either version 2 of the License, or (at your
+// option) any later version.
 //
-// This file is distributed in the hope that it will be useful, but  
-// WITHOUT ANY WARRANTY; without even the implied warranty of  
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU  
+// This file is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 // General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License  
+// You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// This file incorporates work covered by the following copyright and  
+// This file incorporates work covered by the following copyright and
 // permission notice:
 //
 //   Copyright (C) 2012 by Salvatore Sanfilippo <antirez@gmail.com>
@@ -76,8 +76,8 @@ struct aircraft *trackCreateAircraft(struct modesMessage *mm) {
     a->fatsv_emitted_bds_30[0] = 0x30;
     a->fatsv_emitted_es_acas_ra[0] = 0xE2;
 
-    // mm->msgtype 32 is used to represent Mode A/C. These values can never change, so 
-    // set them once here during initialisation, and don't bother to set them every 
+    // mm->msgtype 32 is used to represent Mode A/C. These values can never change, so
+    // set them once here during initialisation, and don't bother to set them every
     // time this ModeA/C is received again in the future
     if (mm->msgtype == 32) {
         a->modeACflags = MODEAC_MSG_FLAG;
@@ -89,7 +89,7 @@ struct aircraft *trackCreateAircraft(struct modesMessage *mm) {
     // Copy the first message so we can emit it later when a second message arrives.
     a->first_message = *mm;
 
-    Modes.stats_current.unique_aircraft++;
+    //Modes.stats_current.unique_aircraft++;
 
     return (a);
 }
@@ -184,6 +184,7 @@ static double greatcircle(double lat0, double lon0, double lat1, double lon1)
     return 6371e3 * acos(sin(lat0) * sin(lat1) + cos(lat0) * cos(lat1) * cos(dlon));
 }
 
+/*
 static void update_range_histogram(double lat, double lon)
 {
     if (Modes.stats_range_histo && (Modes.bUserFlags & MODES_USER_LATLON_VALID)) {
@@ -195,9 +196,10 @@ static void update_range_histogram(double lat, double lon)
         else if (bucket >= RANGE_BUCKET_COUNT)
             bucket = RANGE_BUCKET_COUNT-1;
 
-        ++Modes.stats_current.range_histogram[bucket];
+        //++Modes.stats_current.range_histogram[bucket];
     }
 }
+*/
 
 /*
 // return true if it's OK for the aircraft to have travelled from its last known position
@@ -317,7 +319,7 @@ static int doGlobalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now
                     a->addr, *lat, *lon, Modes.maxRange/1000.0, range/1000.0);
 #endif
 
-            Modes.stats_current.cpr_global_range_checks++;
+            //Modes.stats_current.cpr_global_range_checks++;
             return (-2); // we consider an out-of-range value to be bad data
         }
     }
@@ -358,7 +360,7 @@ static int doLocalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now,
     } else if (!surface && (Modes.bUserFlags & MODES_USER_LATLON_VALID)) {
         reflat = Modes.fUserLat;
         reflon = Modes.fUserLon;
-        
+
         // The cell size is at least 360NM, giving a nominal
         // max range of 180NM (half a cell).
         //
@@ -395,7 +397,7 @@ static int doLocalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now,
     if (range_limit > 0) {
         double range = greatcircle(reflat, reflon, *lat, *lon);
         if (range > range_limit) {
-            Modes.stats_current.cpr_local_range_checks++;
+            //Modes.stats_current.cpr_local_range_checks++;
             return (-1);
         }
     }
@@ -431,7 +433,7 @@ static void updatePosition(struct aircraft *a, struct modesMessage *mm, uint64_t
     surface = (mm->cpr_type == CPR_SURFACE);
 
     if (surface) {
-        ++Modes.stats_current.cpr_surface;
+        //++Modes.stats_current.cpr_surface;
 
         // Surface: 25 seconds if >25kt or speed unknown, 50 seconds otherwise
         if (mm->speed_valid && mm->speed <= 25)
@@ -439,7 +441,7 @@ static void updatePosition(struct aircraft *a, struct modesMessage *mm, uint64_t
         else
             max_elapsed = 25000;
     } else {
-        ++Modes.stats_current.cpr_airborne;
+        //++Modes.stats_current.cpr_airborne;
 
         // Airborne: 10 seconds
         max_elapsed = 10000;
@@ -461,7 +463,7 @@ static void updatePosition(struct aircraft *a, struct modesMessage *mm, uint64_t
             // This is bad data. Discard both odd and even messages and wait for a fresh pair.
             // Also disable aircraft-relative positions until we have a new good position (but don't discard the
             // recorded position itself)
-            Modes.stats_current.cpr_global_bad++;
+            //Modes.stats_current.cpr_global_bad++;
             a->cpr_odd_valid.source = a->cpr_even_valid.source = a->position_valid.source = SOURCE_INVALID;
 
             return;
@@ -473,9 +475,9 @@ static void updatePosition(struct aircraft *a, struct modesMessage *mm, uint64_t
 #endif
             // No local reference for surface position available, or the two messages crossed a zone.
             // Nonfatal, try again later.
-            Modes.stats_current.cpr_global_skipped++;
+            //Modes.stats_current.cpr_global_skipped++;
         } else {
-            Modes.stats_current.cpr_global_ok++;
+            //Modes.stats_current.cpr_global_ok++;
             combine_validity(&a->position_valid, &a->cpr_even_valid, &a->cpr_odd_valid);
         }
     }
@@ -485,9 +487,9 @@ static void updatePosition(struct aircraft *a, struct modesMessage *mm, uint64_t
         location_result = doLocalCPR(a, mm, now, &new_lat, &new_lon, &new_nuc);
 
         if (location_result < 0) {
-            Modes.stats_current.cpr_local_skipped++;
+            //Modes.stats_current.cpr_local_skipped++;
         } else {
-            Modes.stats_current.cpr_local_ok++;
+            //Modes.stats_current.cpr_local_ok++;
             mm->cpr_relative = 1;
 
             if (mm->cpr_odd) {
@@ -509,7 +511,7 @@ static void updatePosition(struct aircraft *a, struct modesMessage *mm, uint64_t
         a->lon = new_lon;
         a->pos_nuc = new_nuc;
 
-        update_range_histogram(new_lat, new_lon);
+        //update_range_histogram(new_lat, new_lon);
     }
 }
 
@@ -672,18 +674,18 @@ struct aircraft *trackUpdateFromMessage(struct modesMessage *mm)
 // A Mode S equipped aircraft may also respond to Mode A and Mode C SSR interrogations.
 // We can't tell if this is a Mode A or C, so scan through the entire aircraft list
 // looking for matches on Mode A (squawk) and Mode C (altitude). Flag in the Mode S
-// records that we have had a potential Mode A or Mode C response from this aircraft. 
+// records that we have had a potential Mode A or Mode C response from this aircraft.
 //
-// If an aircraft responds to Mode A then it's highly likely to be responding to mode C 
+// If an aircraft responds to Mode A then it's highly likely to be responding to mode C
 // too, and vice verca. Therefore, once the mode S record is tagged with both a Mode A
 // and a Mode C flag, we can be fairly confident that this Mode A/C frame relates to that
 // Mode S aircraft.
 //
-// Mode C's are more likely to clash than Mode A's; There could be several aircraft 
-// cruising at FL370, but it's less likely (though not impossible) that there are two 
+// Mode C's are more likely to clash than Mode A's; There could be several aircraft
+// cruising at FL370, but it's less likely (though not impossible) that there are two
 // aircraft on the same squawk. Therefore, give precidence to Mode A record matches
 //
-// Note : It's theoretically possible for an aircraft to have the same value for Mode A 
+// Note : It's theoretically possible for an aircraft to have the same value for Mode A
 // and Mode C. Therefore we have to check BOTH A AND C for EVERY S.
 //
 static void trackUpdateAircraftModeA(struct aircraft *a)
@@ -691,7 +693,7 @@ static void trackUpdateAircraftModeA(struct aircraft *a)
     struct aircraft *b = Modes.aircrafts;
 
     while(b) {
-        if ((b->modeACflags & MODEAC_MSG_FLAG) == 0) {  // skip any fudged ICAO records 
+        if ((b->modeACflags & MODEAC_MSG_FLAG) == 0) {  // skip any fudged ICAO records
 
             // If both (a) and (b) have valid squawks...
             if (trackDataValid(&a->squawk_valid) && trackDataValid(&b->squawk_valid)) {
@@ -703,7 +705,7 @@ static void trackUpdateAircraftModeA(struct aircraft *a)
                     if ( (b->modeAcount > 0) &&
                        ( (b->modeCcount > 1)
                       || (a->modeACflags & MODEAC_MSG_MODEA_ONLY)) ) // Allow Mode-A only matches if this Mode-A is invalid Mode-C
-                        {a->modeACflags |= MODEAC_MSG_MODES_HIT;}    // flag this ModeA/C probably belongs to a known Mode S                    
+                        {a->modeACflags |= MODEAC_MSG_MODES_HIT;}    // flag this ModeA/C probably belongs to a known Mode S
                 }
             }
 
@@ -718,7 +720,7 @@ static void trackUpdateAircraftModeA(struct aircraft *a)
                     a->modeACflags |= MODEAC_MSG_MODEC_HIT;
                     if ( (b->modeAcount > 0) &&
                          (b->modeCcount > 1) )
-                        {a->modeACflags |= (MODEAC_MSG_MODES_HIT | MODEAC_MSG_MODEC_OLD);} // flag this ModeA/C probably belongs to a known Mode S                    
+                        {a->modeACflags |= (MODEAC_MSG_MODES_HIT | MODEAC_MSG_MODEC_OLD);} // flag this ModeA/C probably belongs to a known Mode S
                 }
             }
         }
@@ -755,14 +757,14 @@ static void trackRemoveStaleAircraft(uint64_t now)
 {
     struct aircraft *a = Modes.aircrafts;
     struct aircraft *prev = NULL;
-    
+
     while(a) {
         if ((now - a->seen) > TRACK_AIRCRAFT_TTL ||
             (a->messages == 1 && (now - a->seen) > TRACK_AIRCRAFT_ONEHIT_TTL)) {
             // Count aircraft where we saw only one message before reaping them.
             // These are likely to be due to messages with bad addresses.
-            if (a->messages == 1)
-                Modes.stats_current.single_message_aircraft++;
+            //if (a->messages == 1)
+                //Modes.stats_current.single_message_aircraft++;
 
             // Remove the element from the linked list, with care
             // if we are removing the first element

@@ -4,20 +4,20 @@
 //
 // Copyright (c) 2014-2016 Oliver Jowett <oliver@mutability.co.uk>
 //
-// This file is free software: you may copy, redistribute and/or modify it  
+// This file is free software: you may copy, redistribute and/or modify it
 // under the terms of the GNU General Public License as published by the
-// Free Software Foundation, either version 2 of the License, or (at your  
-// option) any later version.  
+// Free Software Foundation, either version 2 of the License, or (at your
+// option) any later version.
 //
-// This file is distributed in the hope that it will be useful, but  
-// WITHOUT ANY WARRANTY; without even the implied warranty of  
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU  
+// This file is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 // General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License  
+// You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// This file incorporates work covered by the following copyright and  
+// This file incorporates work covered by the following copyright and
 // permission notice:
 //
 //   Copyright (C) 2012 by Salvatore Sanfilippo <antirez@gmail.com>
@@ -241,14 +241,15 @@ typedef enum {
 // Include subheaders after all the #defines are in place
 
 #include "util.h"
-#include "anet.h"
+//#include "anet.h"
 //#include "net_io.h"
 #include "crc.h"
-#include "demod_2400.h"
-#include "stats.h"
+//#include "demod_2400.h"
+//#include "stats.h"
 #include "cpr.h"
 #include "icao_filter.h"
-#include "convert.h"
+//#include "convert.h"
+#include "kmlexport.h"
 
 //======================== structure declarations =========================
 
@@ -278,16 +279,7 @@ struct {                             // Internal state
     double          sample_rate;                          // actual sample rate in use (in hz)
 
     int             fd;              // --ifile option file descriptor
-    input_format_t  input_format;    // --iformat option
-    uint16_t       *maglut;          // I/Q -> Magnitude lookup table
-    uint16_t       *log10lut;        // Magnitude -> log10 lookup table
-    int             exit;            // Exit from the main loop when true
-
-    // Sample conversion
-    int            dc_filter;        // should we apply a DC filter?
-    iq_convert_fn  converter_function;
-    struct converter_state *converter_state;
-
+    int             exit;
     // RTLSDR
     char *        dev_name;
     int           gain;
@@ -354,16 +346,18 @@ struct {                             // Internal state
     char *html_dir;                  // Path to www base directory.
     int   json_location_accuracy;    // Accuracy of location metadata: 0=none, 1=approx, 2=exact
     int   throttle;                  // When reading from a file, throttle file playback to realtime?
-	
+
 	// added for beast black box utility
 	uint64_t firsttimestampMsg;	     // Timestamp of the first message (12MHz clock)
 	uint64_t previoustimestampMsg;   // Timestamp of the last message (12MHz clock)
 	struct timespec baseTime;        // Base time (UNIX format) to calculate relative time for messages using MLAT timestamps
 	int useLocaltime;                // Trigger UTC/local user time
-	char *filename_extract;          // Output to file, --extract option
+	char *filename_extract;          // Extract filename, --extract option
+	char *filename_kml;              // Output to KML file, --export-kml option
+	FILE *output_kml;
 	uint32_t last_addr;              // Flag to save BEAST message to output --extract option
     // ---------------------------------
-	
+
     int   json_aircraft_history_next;
     struct {
         char *content;
@@ -378,7 +372,7 @@ struct {                             // Internal state
 
     // State tracking
     struct aircraft *aircrafts;
-
+/*
     // Statistics
     struct stats stats_current;
     struct stats stats_alltime;
@@ -387,6 +381,7 @@ struct {                             // Internal state
     int stats_latest_1min;
     struct stats stats_5min;
     struct stats stats_15min;
+*/
 } Modes;
 
 // The struct we use to store information about a decoded message.
@@ -394,10 +389,10 @@ struct modesMessage {
     // Generic fields
     unsigned char msg[MODES_LONG_MSG_BYTES];      // Binary message.
     unsigned char verbatim[MODES_LONG_MSG_BYTES]; // Binary message, as originally received before correction
-    int           msgbits;                        // Number of bits in message 
+    int           msgbits;                        // Number of bits in message
     int           msgtype;                        // Downlink format #
     uint32_t      crc;                            // Message CRC
-    int           correctedbits;                  // No. of bits corrected 
+    int           correctedbits;                  // No. of bits corrected
     uint32_t      addr;                           // Address Announced
     addrtype_t    addrtype;                       // address format / source
     uint64_t      timestampMsg;                   // Timestamp of the message (12MHz clock)

@@ -1,8 +1,8 @@
 //  BEAST black box utility
-//  Utility to read benary beast traffic from the file
-//  File could be generated using netcat:
+//  Utility to read binary BEAST traffic from the file
+//  Log file could be generated using netcat:
 //  nc 127.0.0.1 30005 > radar.log
-//
+//	For more information please visit https://github.com/denzen84/beastblackbox/blob/master/README.md
 //  (c) 2018 Denis G Dugushkin
 //  dentall@mail.ru
 //
@@ -75,7 +75,7 @@ void view1090InitConfig(void) {
     Modes.mode_ac 				  = 0;
 	Modes.baseTime.tv_sec         = 0;
 	Modes.baseTime.tv_nsec        = 0;
-	Modes.useLocaltime            = 0;   
+	Modes.useLocaltime            = 0;
 }
 //
 //=========================================================================
@@ -87,17 +87,17 @@ void view1090Init(void) {
 
     // Validate the users Lat/Lon home location inputs
     if ( (Modes.fUserLat >   90.0)  // Latitude must be -90 to +90
-      || (Modes.fUserLat <  -90.0)  // and 
+      || (Modes.fUserLat <  -90.0)  // and
       || (Modes.fUserLon >  360.0)  // Longitude must be -180 to +360
       || (Modes.fUserLon < -180.0) ) {
         Modes.fUserLat = Modes.fUserLon = 0.0;
     } else if (Modes.fUserLon > 180.0) { // If Longitude is +180 to +360, make it -180 to 0
         Modes.fUserLon -= 360.0;
     }
-    // If both Lat and Lon are 0.0 then the users location is either invalid/not-set, or (s)he's in the 
-    // Atlantic ocean off the west coast of Africa. This is unlikely to be correct. 
-    // Set the user LatLon valid flag only if either Lat or Lon are non zero. Note the Greenwich meridian 
-    // is at 0.0 Lon,so we must check for either fLat or fLon being non zero not both. 
+    // If both Lat and Lon are 0.0 then the users location is either invalid/not-set, or (s)he's in the
+    // Atlantic ocean off the west coast of Africa. This is unlikely to be correct.
+    // Set the user LatLon valid flag only if either Lat or Lon are non zero. Note the Greenwich meridian
+    // is at 0.0 Lon,so we must check for either fLat or fLon being non zero not both.
     // Testing the flag at runtime will be much quicker than ((fLon != 0.0) || (fLat != 0.0))
     Modes.bUserFlags &= ~MODES_USER_LATLON_VALID;
     if ((Modes.fUserLat != 0.0) || (Modes.fUserLon != 0.0)) {
@@ -108,7 +108,7 @@ void view1090Init(void) {
     // Prepare error correction tables
     modesChecksumInit(Modes.nfix_crc);
     icaoFilterInit();
-  
+
 }
 
 //
@@ -117,16 +117,17 @@ void view1090Init(void) {
 void showHelp(void) {
     printf(
 "-----------------------------------------------------------------------------\n"
-"| BEAST: black box utility                                            v0.996a|\n"
+"| BEAST: black box utility                                            v0.997a|\n"
 "-----------------------------------------------------------------------------\n"
- 
+
   "--filename <file>        Source file to proceed\n"
-  "--extract <file>         Extract BEAST data to new file (if no filter specified it just copies source)\n"
-  "--init-time-unix <sec>   Start time (UNIX format) to calculate message realtime using MLAT timestamps\n"
-  "--localtime              Decode time as local time (default is UTC)\n"
+  "--extract <file>         Extract BEAST data to new file (if no ICAO filter specified it just copies the source)\n"
+  "--init-time-unix <sec>   Start time (UNIX epoch, format: ss.ms) to calculate realtime using MLAT timestamps\n"
+  "--localtime              Decode time as local time (default: UTC)\n"
+  "--sbs-output             Show messages in SBS format (default: dump1090 style)\n"
   "--filter-icao <addr>     Show only messages from the given ICAO\n"
-  "--max-messages <count>   Limit messages count (from the start of the file)\n"
-  "--sbs-output             Show messages in SBS format\n"
+  "--export-kml <file>      Export coordinates and height to KML (works only with --filter-icao)\n"
+  "--max-messages <count>   Limit messages count from the start of the file (default: all)\n"
   "--show-progress          Show progress during file operation\n\n"
   "Additional BEAST options:\n"
   "--modeac                 Enable decoding of SSR modes 3/A & 3/C\n"
@@ -140,20 +141,20 @@ void showHelp(void) {
 }
 
 static void addMLATtime(struct timespec *msgTime, uint64_t mlatTimestamp) {
-	
+
 	uint64_t mlat_realtime;
-	
+
 	mlat_realtime = mlatTimestamp / 12;
 	//printf("%llu\n",(unsigned long long) mlat_realtime);
-	
+
 	msgTime->tv_nsec += 1000 * (mlat_realtime % 1000000);
-	
+
 	if (msgTime->tv_nsec > 999999999) {
 		msgTime->tv_sec++;
 		msgTime->tv_nsec -= 999999999;
 	}
-	
-	msgTime->tv_sec += mlat_realtime / 1000000;	
+
+	msgTime->tv_sec += mlat_realtime / 1000000;
 }
 
 //
@@ -169,7 +170,7 @@ static void modesSendSBSOutput(struct modesMessage *mm) {
     int          msgType;
 	p = &buffer[0];
 	struct aircraft *a = Modes.aircrafts;
-	
+
     // For now, suppress non-ICAO addresses
     if ((mm->addr & MODES_NON_ICAO_ADDRESS) || !(!Modes.show_only || mm->addr == Modes.show_only))
         return;
@@ -228,7 +229,7 @@ static void modesSendSBSOutput(struct modesMessage *mm) {
     localtime_r(&now.tv_sec, &stTime_now);
 
     // Find message reception time
-	if (Modes.useLocaltime) localtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive); 
+	if (Modes.useLocaltime) localtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
 	else gmtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
 
     // Fields 7 & 8 are the message reception time and date
@@ -270,10 +271,10 @@ static void modesSendSBSOutput(struct modesMessage *mm) {
     if (mm->speed_valid && mm->speed_source == SPEED_GROUNDSPEED) {
         p += sprintf(p, ",%d", mm->speed);
     } else {
-        p += sprintf(p, ","); 
+        p += sprintf(p, ",");
     }
 
-    // Field 14 is the ground Heading (if we have it)       
+    // Field 14 is the ground Heading (if we have it)
     if (mm->heading_valid && mm->heading_source == HEADING_TRUE) {
         p += sprintf(p, ",%d", mm->heading);
     } else {
@@ -350,7 +351,7 @@ static void modesSendSBSOutput(struct modesMessage *mm) {
     p += sprintf(p, "\r\n");
 
     printf("%s", buffer);
-	
+
 }
 
 //
@@ -373,13 +374,13 @@ int decodeBinMessage(char *p) {
     unsigned char msg[MODES_LONG_MSG_BYTES];
     static struct modesMessage zeroMessage;
     struct modesMessage mm;
-		
+
     memset(&mm, 0, sizeof(mm));
-        
-		
+
+
 
     ch = *p++; /// Get the message type
-    if (0x1A == ch) {ch=*p++;}   
+    if (0x1A == ch) {ch=*p++;}
     if       ((ch == '1') && (Modes.mode_ac)) { // skip ModeA/C unless user enables --modes-ac
         msgLen = MODEAC_MSG_BYTES;
     } else if (ch == '2') {
@@ -387,7 +388,7 @@ int decodeBinMessage(char *p) {
     } else if (ch == '3') {
         msgLen = MODES_LONG_MSG_BYTES;
     }
-    
+
     if (msgLen) {
         mm = zeroMessage;
 
@@ -402,11 +403,11 @@ int decodeBinMessage(char *p) {
             mm.timestampMsg = mm.timestampMsg << 8 | (ch & 255);
             if (0x1A == ch) {p++;}
         }
-		
+
 	    mm.sysTimestampMsg.tv_nsec = Modes.baseTime.tv_nsec;
 	    mm.sysTimestampMsg.tv_sec = Modes.baseTime.tv_sec;
 	    addMLATtime(&mm.sysTimestampMsg, (mm.timestampMsg - Modes.firsttimestampMsg));
-		                                                                          
+
 
         // record reception time as the time we read it.
         //clock_gettime(CLOCK_REALTIME, &mm.sysTimestampMsg);
@@ -422,28 +423,24 @@ int decodeBinMessage(char *p) {
         }
 
         if (msgLen == MODEAC_MSG_BYTES) { // ModeA or ModeC
-            Modes.stats_current.remote_received_modeac++;
             decodeModeAMessage(&mm, ((msg[0] << 8) | msg[1]));
         } else {
             int result;
 
-            Modes.stats_current.remote_received_modes++;
+            //Modes.stats_current.remote_received_modes++;
             result = decodeModesMessage(&mm, msg);
-            if (result < 0) {
-                if (result == -1)
-                    Modes.stats_current.remote_rejected_unknown_icao++;
-                else
-                    Modes.stats_current.remote_rejected_bad++;
-                return 0;
-            } else {
-                Modes.stats_current.remote_accepted[mm.correctedbits]++;
-            }
+            if (result < 0) return 0;
+
         }
 
-		//if (Modes.interactive_rtl1090) 
+		//if (Modes.interactive_rtl1090)
 		Modes.last_addr = mm.addr;
 		useModesMessage(&mm);
 		if(Modes.quiet) modesSendSBSOutput(&mm);
+
+        if((Modes.output_kml != NULL) && (Modes.show_only == mm.addr)) {
+            writeKMLcoordinates(Modes.output_kml, &mm);
+        }
     }
     return (0);
 }
@@ -463,8 +460,8 @@ static int copyBinMessageSafe(char *p, int limit, char *out) {
 		*out = 0x1A;
 		out++;
 		} else return 0;
-		
-	ch = *p;	
+
+	ch = *p;
     if ((ch == '1') && (Modes.mode_ac)) { // skip ModeA/C unless user enables --modes-ac  {
         msgLen = MODEAC_MSG_BYTES;
 		*out = '1';
@@ -478,9 +475,9 @@ static int copyBinMessageSafe(char *p, int limit, char *out) {
 		*out = '3';
 		out++;
     } else return 0;
-	
-	
-	
+
+
+
     if (msgLen) {
 	   msgLen += 9;
 	   if (msgLen  > limit)   return -1;
@@ -503,48 +500,59 @@ static int copyBinMessageSafe(char *p, int limit, char *out) {
 
 int readbeastfile() {
 
-    int input_bb, output_bb;   
+    int input_bb, output_bb;
 	ssize_t i,k,ret_in, ret_out, seek;
     char buffer[BUF_SIZE];
 	struct stat sb;
 	char *p;
 	long long unsigned  j, js, global;
 	char beastmessage[MAX_MSG_LEN];
-		
+
+    input_bb = -1;
 	output_bb = -1;
-	
+	Modes.output_kml = NULL;
+
     input_bb = open(Modes.filename, O_RDONLY);
     if (input_bb == -1) {
-            fprintf(stderr, "Error. Unable to open file %s\n",Modes.filename);
+            fprintf(stderr, "Error. Unable to open for read BEAST file %s\n",Modes.filename);
             return 2;
     }
-	
+
 	if (Modes.filename_extract != NULL) {
 	output_bb = open(Modes.filename_extract, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 		if (output_bb == -1) {
-            fprintf(stderr, "Error. Unable to open for write file %s\n",Modes.filename_extract);
+            fprintf(stderr, "Error. Unable to open for write BEAST file %s\n",Modes.filename_extract);
             return 2;
 		}
 	}
-	
+
+	if (Modes.filename_kml != NULL) {
+        Modes.output_kml = fopen(Modes.filename_kml, "w");
+		if (Modes.output_kml == NULL) {
+            fprintf(stderr, "Error. Unable to open for write KML file %s\n",Modes.filename_extract);
+            return 2;
+		}
+		writeKMLpreamble(Modes.output_kml, Modes.show_only);
+	}
+
    fstat(input_bb, &sb);
    ret_in = read (input_bb, &buffer[0], BUF_SIZE);
-	
+
 	// Scan for header here ---------------------------------------------------
 	// Now we only read first beast message and get it MLAT timestamp to relative
 	// time calculations.
 	k = 0;
-	
+
 	while(k < ret_in) {
-	
+
 	i = copyBinMessageSafe(&buffer[k], BUF_SIZE - k, &beastmessage[0]);
-	
+
 	if(i > 0) {
 	Modes.firsttimestampMsg = 0;
 	p = &beastmessage[2];
-	
-	for (j = 0; j < 6; j++) {   
-	
+
+	for (j = 0; j < 6; j++) {
+
             Modes.firsttimestampMsg = Modes.firsttimestampMsg << 8 | (*p & 255);
             if (0x1A == *p) {p++;}
 			p++;
@@ -553,79 +561,80 @@ int readbeastfile() {
 		Modes.previoustimestampMsg = Modes.firsttimestampMsg;
 		break;
 	} else k++;
-	
+
 	} else k++;
-	
+
 	}
 	// ------------------------------------------------------------------------
-	
+
 	j = 0;
 	js = 0;
 	seek = 0;
 	global = 0;
-	
+
 	while((ret_in > 0) && (!Modes.exit)) {
-	
+
 	k = 0;
-	
+
 	while(k < (ret_in + seek)) {
 	icaoFilterExpire();
     trackPeriodicUpdate();
 	i = copyBinMessageSafe(&buffer[k], ret_in + seek - k, &beastmessage[0]);
 	if(i > 0) {
-	j++;
-	/* printf("%16llX %08X lim = %d len = %d, HEX = ", global, k, ret_in + seek - k, i);
-	for(j=0;j<i;j++) {
-		printf("%02X ",beastmessage[j]);
-	}
-	printf("\n");
-	*/
-	
+    j++;
+
 	if (Modes.throttle && (j % 0xFFF  == 0)) {printf("Processing... File offset 0x%llX (%llu%%), message #%llu\r", global, ((100*global)/(uint64_t)sb.st_size),j); }
 	decodeBinMessage(&beastmessage[0]);
-	
+
 	if (Modes.interactive_display_ttl && (j==Modes.interactive_display_ttl)) {goto EXIT_LIMIT; }
-	
-	if ((output_bb != -1) && ((!Modes.show_only || Modes.last_addr == Modes.show_only) || (Modes.show_only==0))) {
-		ret_out = write (output_bb, &beastmessage[0], (ssize_t) i);
-		
+
+	if ((!Modes.show_only || Modes.last_addr == Modes.show_only) || (Modes.show_only==0)) {
+        if (output_bb != -1) {
+            ret_out = write (output_bb, &beastmessage[0], (ssize_t) i);
 		if (ret_out != i) {
 		fprintf(stderr, "Error. Write error in file %s\n",Modes.filename_extract);
-        return 2;	
+        return 2;
 		}
 		js++;
+        }
+
 	}
-	
+
 	k+=i;
 	global+=i;
 	} else
 	   if(i == 0) {
 		if ((ret_in + seek - k) == 1) {
 
-			break; 
-			
-		} 
+			break;
+
+		}
 		else { k++; global++; }
 		}
 		else { break;}
-	
-	
+
+
 	}
 	seek = BUF_SIZE - k;
 	if (seek > 0 ) memcpy(&buffer[0],&buffer[k], seek);
-	
+
 	ret_in = read (input_bb, &buffer[seek], k);
 	}
-	
+
 	EXIT_LIMIT:
 	printf("\n");
 	if (js) printf("Extracted %llu messages\n", js);
 	printf("Total processed %llu messages\n", j);
-    
 
-   
+
+
     close (input_bb);
 	close (output_bb);
+	if(Modes.output_kml != NULL) {
+    writeKMLend(Modes.output_kml);
+    fclose(Modes.output_kml);
+	}
+
 
     return 0;
 }
@@ -647,18 +656,20 @@ int main(int argc, char **argv) {
     // Parse the command line options
     for (j = 1; j < argc; j++) {
         int more = ((j + 1) < argc); // There are more arguments
-		
+
 		if (!strcmp(argv[j],"--modeac")) {
             Modes.mode_ac = 1;
 		} else if (!strcmp(argv[j],"--localtime")) {
-            Modes.useLocaltime = 1; 
-		} else if (!strcmp(argv[j],"--init-time-unix") && more) {
+            Modes.useLocaltime = 1;
+        } else if (!strcmp(argv[j],"--init-time-unix") && more) {
 			Modes.baseTime.tv_nsec = (int) (1000000000 * modf(atof(argv[++j]),&t));
 			Modes.baseTime.tv_sec = (int) t;
+		} else if (!strcmp(argv[j],"--export-kml") && more) {
+			Modes.filename_kml = strdup(argv[++j]);
 	    } else if (!strcmp(argv[j],"--filename") && more) {
 		    Modes.filename = strdup(argv[++j]);
 		} else if (!strcmp(argv[j],"--extract") && more) {
-		    Modes.filename_extract = strdup(argv[++j]);			
+		    Modes.filename_extract = strdup(argv[++j]);
 		} else if (!strcmp(argv[j],"--filter-icao") && more) {
             Modes.show_only = (uint32_t) strtoul(argv[++j], NULL, 16);
             Modes.interactive = 0;
@@ -694,16 +705,23 @@ int main(int argc, char **argv) {
             exit(1);
         }
     }
-	
+
 	if (Modes.filename == NULL) {
             showHelp();
 			fprintf(stderr, "\nERROR: no file specified. Nothing to do. Use --filename option.\n\n");
-            exit(1);		
+            exit(1);
 	}
-	
+
+	if((Modes.filename_kml != NULL) && (!Modes.show_only)) {
+            showHelp();
+			fprintf(stderr, "\nERROR: no filter ICAO specified. Option --export-kml works only with --filter-icao\n\n");
+			exit(1);
+	}
+
+
     readbeastfile();
-	
-    	
+
+
     return (0);
 }
 //
