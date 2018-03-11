@@ -6,6 +6,7 @@ BEAST black box utility is command line tool that decodes ModeS and ModeA/C info
 2. Extract binary BEAST messages according to the filter to another file
 3. Filter by ICAO address
 4. Decode MLAT timestamps in two ways: relative time and realtime (for second option it needs to have realtime information in UNIX time format for the first file record).
+5. Experimental flight track export of the specified ICAO to KML file. Useful to see track in Google Maps or Google Earth.
 ## Command line keys and options
 ```
 --filename <file>        Source file to proceed
