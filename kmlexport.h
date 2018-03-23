@@ -2,7 +2,7 @@
 #define KMLEXPORT_H_INCLUDED
 
 #include <stdio.h>
-#include "dump1090.h"
+#include "beastblackbox.h"
 struct modesMessage;
 
 void writeKMLpreamble(FILE *f, uint32_t icao);

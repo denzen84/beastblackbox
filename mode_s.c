@@ -48,7 +48,7 @@
 //   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-#include "dump1090.h"
+#include "beastblackbox.h"
 
 /* for PRIX64 */
 #include <inttypes.h>
@@ -428,10 +428,7 @@ int decodeModesMessage(struct modesMessage *mm, unsigned char *msg)
 {
     // Work on our local copy.
     memcpy(mm->msg, msg, MODES_LONG_MSG_BYTES);
-    if (Modes.net_verbatim) {
-        // Preserve the original uncorrected copy for later forwarding
-        memcpy(mm->verbatim, msg, MODES_LONG_MSG_BYTES);
-    }
+
     msg = mm->msg;
 
     // don't accept all-zeros messages
@@ -1824,27 +1821,6 @@ void useModesMessage(struct modesMessage *mm) {
         displayModesMessage(mm);
 		if (mm->timestampMsg) Modes.previoustimestampMsg = mm->timestampMsg;
     }
-
-    // Feed output clients.
-    // If in --net-verbatim mode, do this for all messages.
-    // Otherwise, apply a sanity-check filter and only
-    // forward messages when we have seen two of them.
-/*
-    if (Modes.net) {
-        if (Modes.net_verbatim || mm->msgtype == 32) {
-            // Unconditionally send
-            modesQueueOutput(mm, a);
-        } else if (a->messages > 1) {
-            // If this is the second message, and we
-            // squelched the first message, then re-emit the
-            // first message now.
-            if (!Modes.net_verbatim && a->messages == 2) {
-                modesQueueOutput(&a->first_message, a);
-            }
-            modesQueueOutput(mm, a);
-        }
-    }
-*/
 }
 
 //

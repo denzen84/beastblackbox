@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License  
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "dump1090.h"
+#include "beastblackbox.h"
 
 // hash table size, must be a power of two:
 #define ICAO_FILTER_SIZE 16384
