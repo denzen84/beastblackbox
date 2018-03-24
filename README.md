@@ -48,6 +48,19 @@ exit 0
 
 This script will save UTC Unix timestamp in the filename and will give opportunity to get realtime stamps using _--init-unix-time_ command line option.
 
+## About MLAT timestamps and log timings
+As mentioned above, binary Beast format doesn't contain real time information at full. According to Beast format description at [http://wiki.modesbeast.com](http://wiki.modesbeast.com/Radarcape:Firmware_Versions), MLAT timestamp consists of seconds count from the start of the day (upper 18 bits) and nanoseconds (first 30 bits).
+
+>The GPS timestamp is completely handled in the FPGA (hardware) and does not require any interactions on the Linux side. This is >essential to meet the required accuracy. The local clock in the FPGA (64MHz or 96MHz) is stretched or compressed to meet 1e9 counts in >between two pulses by a linear algorithm, in order to avoid bigger jumps in the timestamp. Rollover from 999999999 to 0 occurs >synchronously to the 1PPS leading edge. In parallel, the Second-of-Day information is read from the TSIP serial data stream and also >aligned to the 1PPS pulse. Both parts are then mapped into the 48bits that are available for the timestamp and transmitted with each >Mode-S or Mode-A/C message.
+
+> * SecondsOfDay are using the upper 18 bits of the timestamp
+> * Nanoseconds are using the lower 30 bits. The value there directly converts into a 1ns based value and does not need to be converted by sample rate
+Original and compatible devices like Radarscrape, Mode-S Beast, Flighradar24 feeder are used this time encoding standart.
+
+In opposite, dump1090 uses simply 48-bit counter.
+
+BEAST black box utility implements both types of timing. It can be switched by key _--mlat-time_ with options _dump1090_ and _beast_. By default no timing method specified and utility gets current user localtime.
+
 ## Compiling and building
 It's only tested on OrangePi boards based on H3 (32 bit ARM) and H5 (64 bit ARM) under Armbian 5.34+ (Debian Jessie and Debian Stretch). In this regard, there are no obstacles that cause problems with building on all Debian-based systems like Raspbian for Raspberry Pi. 
 
@@ -87,7 +100,7 @@ DF:17 AA:400159 CA:7 ME:9909BA0E3804C5
 
 ###### Example 2
 
-```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --max-messages 1000 --sbs-output```
+```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --max-messages 1000 --mlat-time dump1090 --sbs-output```
 
 The same as Example 1, but outputs information in SBS format:
 
@@ -95,7 +108,7 @@ The same as Example 1, but outputs information in SBS format:
 
 ###### Example 3
 
-```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --sbs-output --filter-icao 4249c6```
+```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --mlat-time dump1090 --sbs-output --filter-icao 4249c6```
 
 The same as Example 2, but outputs information in SBS format only for ICAO 4249c6:
 
@@ -117,7 +130,7 @@ Total processed 277 messages
 
 ###### Example 4
 
-```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --sbs-output --filter-icao 4249c6 --init-time-unix 1520012558.147403028```
+```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --sbs-output --filter-icao 4249c6 --init-time-unix 1520012558.147403028 --mlat-time dump1090```
 
 The same as Example 3, but realtime stamps are calculated relative to Unix time 1520012558.147403028 (Fri, 02 Mar 2018 17:42:38.147403028 GMT) instead of default time Unix time 0.0 (Thu, 01 Jan 1970 00:00:00 GMT):
 
@@ -130,7 +143,7 @@ MSG,8,1,1,4249C6,1,2018/03/02,17:42:38.390,2018/03/03,20:28:25.945,,,,,,,,,,,,0
 
 ###### Example 5
 
-```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --sbs-output --filter-icao 4249c6 --init-time-unix 1520012558.147403028 --localtime```
+```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --sbs-output --filter-icao 4249c6 --init-time-unix 1520012558.147403028 --mlat-time dump1090 --localtime```
 
 The same as Example 4, but realtime stamps are calculated in user locale instead of UTC.
 
