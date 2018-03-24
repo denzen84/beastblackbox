@@ -11,22 +11,23 @@ BEAST black box utility is command line tool that decodes ModeS and ModeA/C info
 ```
 --filename <file>        Source file to proceed
 --extract <file>         Extract BEAST data to new file (if no ICAO filter specified it just copies the source)
+--export-kml <file>      Export coordinates and height to KML (works only with --filter-icao)
+--mlat-time <type>       Decode MLAT timestamps in specified manner. Types are: none (default), beast, dump1090
 --init-time-unix <sec>   Start time (UNIX epoch, format: ss.ms) to calculate realtime using MLAT timestamps
 --localtime              Decode time as local time (default: UTC)
 --sbs-output             Show messages in SBS format (default: dump1090 style)
 --filter-icao <addr>     Show only messages from the given ICAO
---export-kml <file>      Export coordinates and height to KML (works only with --filter-icao)
 --max-messages <count>   Limit messages count from the start of the file (default: all)
 --show-progress          Show progress during file operation
+--quiet                  Do not output decoded messages to stdout (useful for --extract and --export-kml)
 
 Additional BEAST options:
 --modeac                 Enable decoding of SSR modes 3/A & 3/C
+--gnss                   Show altitudes as HAE/GNSS (with H suffix) when available
 --no-crc-check           Disable messages with broken CRC (discouraged)
 --no-fix                 Disable single-bits error correction using CRC
 --fix                    Enable single-bits error correction using CRC
 --aggressive             More CPU for more messages (two bits fixes, ...)
---metric                 Use metric units (meters, km/h, ...)
-
 --help                   Show this help
 ```
 ## How to log binary BEAST traffic
