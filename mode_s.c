@@ -1544,7 +1544,7 @@ static void displatMLATtimestamp(struct modesMessage *mm) {
 		}
 		break;
 	case MLAT_BEAST:
-		printf("Time: %lluns\n", (mm->timestampMsg & BEAST_DROP_UPPER_34_BITS));
+		printf("Time: %uns\n", (unsigned) (mm->timestampMsg & BEAST_DROP_UPPER_34_BITS));
 		if (Modes.baseTime.tv_sec || Modes.baseTime.tv_nsec) {
 			printf("Realtime ");
 			if (Modes.useLocaltime) {
@@ -1568,7 +1568,7 @@ static void displatMLATtimestamp(struct modesMessage *mm) {
 			h = realtime / 3600;
 			m = realtime / 60 % 60;
 			s = realtime % 60;
-			printf("Realtime UTC: %02d:%02d:%02d.%03llu\n",h,m,s, (mm->timestampMsg & BEAST_DROP_UPPER_34_BITS) / 1000000U);
+			printf("Realtime UTC: %02d:%02d:%02d.%03u\n",h,m,s, (unsigned) (mm->timestampMsg & BEAST_DROP_UPPER_34_BITS) / 1000000U);
 		}
 		break;
 	default: printf("Time: n/a\n"); break;
