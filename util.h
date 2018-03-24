@@ -21,6 +21,7 @@
 #define DUMP1090_UTIL_H
 
 #include <stdint.h>
+#include "beastblackbox.h"
 
 /* Returns system time in milliseconds */
 uint64_t mstime(void);
@@ -33,7 +34,16 @@ int64_t receiveclock_ns_elapsed(uint64_t t1, uint64_t t2);
 /* Normalize the value in ts so that ts->nsec lies in
  * [0,999999999]
  */
+int readbeastfile(void);
+
 struct timespec;
 void normalize_timespec(struct timespec *ts);
+
+// MLAT timestamps processors
+void MLATtime_none(struct timespec *msgTime, uint64_t mlatTimestamp);
+void MLATtime_beast(struct timespec *msgTime, uint64_t mlatTimestamp);
+void MLATtime_dump1090(struct timespec *msgTime, uint64_t mlatTimestamp);
+
+int time_offset();
 
 #endif

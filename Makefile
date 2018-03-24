@@ -25,7 +25,7 @@ UNAME := $(shell uname)
 
 ifeq ($(UNAME), Linux)
 LIBS+=-lrt
-CFLAGS+=-std=c11 -D_DEFAULT_SOURCE
+CFLAGS+=-std=c11 -D_DEFAULT_SOURCE -s -flto
 endif
 ifeq ($(UNAME), Darwin)
 UNAME_R := $(shell uname -r)
@@ -53,7 +53,7 @@ beastblackbox: beastblackbox.o mode_ac.o mode_s.o crc.o cpr.o icao_filter.o trac
 	$(CC) -g -o $@ $^ $(LIBS_LOW) $(LDFLAGS)
 
 clean:
-	rm -f *.o compat/clock_gettime/*.o compat/clock_nanosleep/*.o dump1090 view1090 faup1090 cprtests crctests
+	rm -f *.o compat/clock_gettime/*.o compat/clock_nanosleep/*.o beastblackbox
 
 test: cprtests
 	./cprtests

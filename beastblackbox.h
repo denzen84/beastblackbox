@@ -5,7 +5,7 @@
  *  Author: Denis G Dugushkin
  */
 
-// Partially based on dump1090.h
+// Partially copies source dump1090.h
 
 // Part of dump1090, a Mode S message decoder for RTLSDR devices.
 //
@@ -65,7 +65,6 @@
     #include <stdio.h>
     #include <string.h>
     #include <stdlib.h>
-    #include <pthread.h>
     #include <stdint.h>
     #include <errno.h>
     #include <unistd.h>
@@ -103,7 +102,7 @@
 #define MODEAC_MSG_MODEA_ONLY    (1<<4)
 #define MODEAC_MSG_MODEC_OLD     (1<<5)
 
-
+#define BEAST_DROP_UPPER_34_BITS 0x000000003FFFFFFF
 #define MODES_USER_LATLON_VALID (1<<0)
 #define INVALID_ALTITUDE (-9999)
 
@@ -170,22 +169,14 @@ typedef enum {
     CPR_SURFACE, CPR_AIRBORNE, CPR_COARSE
 } cpr_type_t;
 
+// Added for BEAST black box
+typedef enum {
+    MLAT_NONE, MLAT_BEAST, MLAT_DUMP1090
+} mlat_time_t;
+
+typedef void (*mlatprocessor_t)(struct timespec *msgTime, uint64_t mlatTimestamp);
+
 #define MODES_NON_ICAO_ADDRESS       (1<<24) // Set on addresses to indicate they are not ICAO addresses
-
-/*
-#define MODES_DEBUG_DEMOD (1<<0)
-#define MODES_DEBUG_DEMODERR (1<<1)
-#define MODES_DEBUG_BADCRC (1<<2)
-#define MODES_DEBUG_GOODCRC (1<<3)
-#define MODES_DEBUG_NOPREAMBLE (1<<4)
-#define MODES_DEBUG_NET (1<<5)
-#define MODES_DEBUG_JS (1<<6)
-*/
-
-#define MODES_INTERACTIVE_REFRESH_TIME 250      // Milliseconds
-#define MODES_INTERACTIVE_ROWS          22      // Rows on screen
-#define MODES_INTERACTIVE_DISPLAY_TTL 60000     // Delete from display after 60 seconds
-
 #define MODES_NOTUSED(V) ((void) V)
 
 
@@ -200,49 +191,49 @@ typedef enum {
 
 // Program global state
 struct {                             // Internal state
-    int             fd;              // --ifile option file descriptor
-    int             exit;
+    int   exit;						 // Flag when user press Ctrl+C
 
-    // Configuration
-    char *filename;                  // Input form file, --ifile option
+    // File
+    char *filename;                  // Input BEAST filename
+	char *filename_extract;          // Output BEAST filename, for --extract option
+	char *filename_kml;              // Output KML filename, for --export-kml option
+
+	int input_bb;                    // File descriptor for input BEAST file
+	int output_bb;					 // File descriptor for output BEAST file
+	FILE *output_kml;				 // File descriptor for KML file
+
+	// BEAST
     int   nfix_crc;                  // Number of crc bit error(s) to correct
     int   check_crc;                 // Only display messages with good CRC
-    int   raw;                       // Raw output format
     int   mode_ac;                   // Enable decoding of SSR Modes A & C
     int   debug;                     // Debugging mode
-    int   quiet;                     // Suppress stdout
     uint32_t show_only;              // Only show messages from this ICAO
-    int   interactive;               // Interactive mode
-    int   interactive_rows;          // Interactive mode: max number of rows
-    uint64_t interactive_display_ttl;// Interactive mode: TTL display
-    int   onlyaddr;                  // Print only ICAO addresses
-    int   metric;                    // Use metric units
     int   use_gnss;                  // Use GNSS altitudes with H suffix ("HAE", though it isn't always) when available
-    int   interactive_rtl1090;       // flight table in interactive mode is formatted like RTL1090
-    int   throttle;                  // When reading from a file, throttle file playback to realtime?
-    int   mlat;                      // Use Beast ascii format for raw data output, i.e. @...; iso *...;
 
-	// added for beast black box utility
+
+	// Options
+    int     show_progress;           // Show progress during file operation
+    int     sbs_output;				 // SBS text output
+    int     quiet;                     // Suppress stdout
+    long long unsigned max_messages; // Max output messages
+
+    // MLAT timestamps
+    mlat_time_t mlat_decoder;		 // Type of MLAT processor
+    mlatprocessor_t MLATtimefunc;    // Processor function for time calculations in specified manner (none, beast, dump1090)
 	uint64_t firsttimestampMsg;	     // Timestamp of the first message (12MHz clock)
 	uint64_t previoustimestampMsg;   // Timestamp of the last message (12MHz clock)
 	struct timespec baseTime;        // Base time (UNIX format) to calculate relative time for messages using MLAT timestamps
 	int useLocaltime;                // Trigger UTC/local user time
-	char *filename_extract;          // Extract filename, --extract option
-	char *filename_kml;              // Output to KML file, --export-kml option
-	FILE *output_kml;
-	uint32_t last_addr;              // Flag to save BEAST message to output --extract option
-    // ---------------------------------
 
+	// Counters
+	long long unsigned msg_processed;
+	long long unsigned msg_extracted;
+	int err_not_known_ICAO;			 // Messages that might be valid, but we couldn't validate the CRC against a known ICAO
+	int err_bad_crc;				 //bad message or unrepairable CRC error
 
-    // User details
-    double fUserLat;                // Users receiver/antenna lat/lon needed for initial surface location
-    double fUserLon;                // Users receiver/antenna lat/lon needed for initial surface location
-    int    bUserFlags;              // Flags relating to the user details
-    double maxRange;                // Absolute maximum decoding range, in *metres*
 
     // State tracking
     struct aircraft *aircrafts;
-
 } Modes;
 
 // The struct we use to store information about a decoded message.

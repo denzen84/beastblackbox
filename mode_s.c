@@ -1506,29 +1506,82 @@ static const char *esTypeName(unsigned metype, unsigned mesub)
     }
 }
 
+static double calcTimeshift(uint64_t currMLATstamp, uint64_t prevMLATstamp) {
+
+	return (currMLATstamp > prevMLATstamp) ? (double) ((currMLATstamp - prevMLATstamp) / 12000000.0) : (double) -((prevMLATstamp - currMLATstamp) / 12000000.0);
+
+}
+
+static void displatMLATtimestamp(struct modesMessage *mm) {
+
+	struct tm stTime_receive;
+	int h, m, s;
+	uint64_t realtime;
+
+	switch (Modes.mlat_decoder) {
+	case MLAT_NONE: printf("Time: MLAT time decoder not specified\n"); break;
+	case MLAT_DUMP1090:
+		printf("Time: %.2fus", mm->timestampMsg / 12.0);
+		printf(", relative: %+.3fs prev message, %+.3fs log start\n",calcTimeshift(mm->timestampMsg, Modes.previoustimestampMsg), ((mm->timestampMsg - Modes.firsttimestampMsg) / 12000000.0));
+		if (Modes.baseTime.tv_sec || Modes.baseTime.tv_nsec) {
+			printf("Realtime ");
+			if (Modes.useLocaltime) {
+				localtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
+				printf("LOCALTIME");
+			}
+			else {
+				gmtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
+				printf("UTC");
+			}
+			printf(": %04d/%02d/%02d %02d:%02d:%02d.%03u\n",
+					(stTime_receive.tm_year+1900),
+					(stTime_receive.tm_mon+1),
+					stTime_receive.tm_mday,
+					stTime_receive.tm_hour,
+					stTime_receive.tm_min,
+					stTime_receive.tm_sec,
+					(unsigned) (mm->sysTimestampMsg.tv_nsec / 1000000U));
+		}
+		break;
+	case MLAT_BEAST:
+		printf("Time: %lluns\n", (mm->timestampMsg & BEAST_DROP_UPPER_34_BITS));
+		if (Modes.baseTime.tv_sec || Modes.baseTime.tv_nsec) {
+			printf("Realtime ");
+			if (Modes.useLocaltime) {
+				localtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
+				printf("LOCALTIME");
+			}
+			else {
+				gmtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
+				printf("UTC");
+			}
+			printf(": %04d/%02d/%02d %02d:%02d:%02d.%03u\n",
+					(stTime_receive.tm_year+1900),
+					(stTime_receive.tm_mon+1),
+					stTime_receive.tm_mday,
+					stTime_receive.tm_hour,
+					stTime_receive.tm_min,
+					stTime_receive.tm_sec,
+					(unsigned) (mm->sysTimestampMsg.tv_nsec / 1000000U));
+		} else {
+			realtime = mm->timestampMsg >> 30;
+			h = realtime / 3600;
+			m = realtime / 60 % 60;
+			s = realtime % 60;
+			printf("Realtime UTC: %02d:%02d:%02d.%03llu\n",h,m,s, (mm->timestampMsg & BEAST_DROP_UPPER_34_BITS) / 1000000U);
+		}
+		break;
+	default: printf("Time: n/a\n"); break;
+	}
+}
+
 void displayModesMessage(struct modesMessage *mm) {
     int j;
-    struct tm stTime_receive;
 
-    // Handle only addresses mode first.
-    if (Modes.onlyaddr) {
-        printf("%06x\n", mm->addr);
-        return;         // Enough for --onlyaddr mode
-    }
-
-    // Show the raw message.
-    if (Modes.mlat && mm->timestampMsg) {
-        printf("@%012" PRIX64, mm->timestampMsg);
-    } else
-        printf("*");
+    printf("*");
 
     for (j = 0; j < mm->msgbits/8; j++) printf("%02x", mm->msg[j]);
     printf(";\n");
-
-    if (Modes.raw) {
-        fflush(stdout); // Provide data to the reader ASAP
-        return;         // Enough for --raw mode
-    }
 
     if (mm->msgtype < 32)
         printf("CRC: %06x\n", mm->crc);
@@ -1545,29 +1598,8 @@ void displayModesMessage(struct modesMessage *mm) {
     if (mm->timestampMsg) {
         if (mm->timestampMsg == MAGIC_MLAT_TIMESTAMP)
             printf("This is a synthetic MLAT message.\n");
-        else {
-            printf("Time: %.2fus", mm->timestampMsg / 12.0);
-			printf(", relative: %+.3fs prev message, %+.3fs log start\n",((mm->timestampMsg - Modes.previoustimestampMsg) / 12000000.0), ((mm->timestampMsg - Modes.firsttimestampMsg) / 12000000.0));
-			if (Modes.baseTime.tv_sec || Modes.baseTime.tv_nsec) {
-				printf("Realtime ");
-                if (Modes.useLocaltime) {
-                	localtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
-                	printf("USER ");
-                }
-            else {
-            	gmtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
-            	printf("UTC ");
-            }
-            printf("timezone: %04d/%02d/%02d %02d:%02d:%02d.%03u\n",
-                   (stTime_receive.tm_year+1900),
-                   (stTime_receive.tm_mon+1),
-                   stTime_receive.tm_mday,
-                   stTime_receive.tm_hour,
-                   stTime_receive.tm_min,
-                   stTime_receive.tm_sec,
-                   (unsigned) (mm->sysTimestampMsg.tv_nsec / 1000000U));
-            }
-        }
+        else displatMLATtimestamp(mm);
+
     }
 
     switch (mm->msgtype) {
@@ -1817,7 +1849,7 @@ void useModesMessage(struct modesMessage *mm) {
      trackUpdateFromMessage(mm);
 
     // In non-interactive non-quiet mode, display messages on standard output
-    if (!Modes.interactive && !Modes.quiet && (!Modes.show_only || mm->addr == Modes.show_only)) {
+    if (!Modes.sbs_output && !Modes.quiet && (!Modes.show_only || mm->addr == Modes.show_only)) {
         displayModesMessage(mm);
 		if (mm->timestampMsg) Modes.previoustimestampMsg = mm->timestampMsg;
     }

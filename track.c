@@ -278,9 +278,10 @@ static int doGlobalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now
             reflon = a->lon;
             if (a->pos_nuc < *nuc)
                 *nuc = a->pos_nuc;
-        } else if (Modes.bUserFlags & MODES_USER_LATLON_VALID) {
+        /*} else if (Modes.bUserFlags & MODES_USER_LATLON_VALID) {
             reflat = Modes.fUserLat;
             reflon = Modes.fUserLon;
+        */
         } else {
             // No local reference, give up
             return (-1);
@@ -310,6 +311,7 @@ static int doGlobalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now
         return result;
     }
 
+/*
     // check max range
     if (Modes.maxRange > 0 && (Modes.bUserFlags & MODES_USER_LATLON_VALID)) {
         double range = greatcircle(Modes.fUserLat, Modes.fUserLon, *lat, *lon);
@@ -323,7 +325,7 @@ static int doGlobalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now
             return (-2); // we consider an out-of-range value to be bad data
         }
     }
-
+*/
     // for mlat results, skip the speed check
     if (mm->source == SOURCE_MLAT)
         return result;
@@ -357,7 +359,9 @@ static int doLocalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now,
             *nuc = a->pos_nuc;
 
         range_limit = 50e3;
-    } else if (!surface && (Modes.bUserFlags & MODES_USER_LATLON_VALID)) {
+    }
+    /*
+    else if (!surface && (Modes.bUserFlags & MODES_USER_LATLON_VALID)) {
         reflat = Modes.fUserLat;
         reflon = Modes.fUserLon;
 
@@ -379,7 +383,9 @@ static int doLocalCPR(struct aircraft *a, struct modesMessage *mm, uint64_t now,
         } else {
             return (-1); // Can't do receiver-centered checks at all
         }
-    } else {
+
+    }*/
+    else {
         // No local reference, give up
         return (-1);
     }
