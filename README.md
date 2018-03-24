@@ -57,9 +57,9 @@ As mentioned above, binary Beast format doesn't contain real time information at
 > * Nanoseconds are using the lower 30 bits. The value there directly converts into a 1ns based value and does not need to be converted by sample rate
 Original and compatible devices like Radarscrape, Mode-S Beast, Flighradar24 feeder are used this time encoding standart.
 
-In opposite, dump1090 uses simply 48-bit counter.
+In opposite, dump1090 uses simply 48-bit counter with absolutely no information about realtime.
 
-BEAST black box utility implements both types of timing. It can be switched by key _--mlat-time_ with options _dump1090_ and _beast_. By default no timing method specified and utility gets current user localtime.
+BEAST black box utility implements both types of timing. It can be switched by key _--mlat-time_ with options _dump1090_ or _beast_. By default no timing method specified and utility gets current user localtime.
 
 ## Compiling and building
 It's only tested on OrangePi boards based on H3 (32 bit ARM) and H5 (64 bit ARM) under Armbian 5.34+ (Debian Jessie and Debian Stretch). In this regard, there are no obstacles that cause problems with building on all Debian-based systems like Raspbian for Raspberry Pi. 
