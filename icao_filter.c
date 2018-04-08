@@ -25,6 +25,8 @@
 // Millis between filter expiry flips:
 #define MODES_ICAO_FILTER_TTL 5000
 
+#define ICAO_PER_LINE 10
+
 // Open-addressed hash table with linear probing.
 // We store each address twice to handle Data/Parity
 // which need to match on a partial address (top 16 bits only).
@@ -34,6 +36,9 @@
 static uint32_t icao_filter_a[ICAO_FILTER_SIZE];
 static uint32_t icao_filter_b[ICAO_FILTER_SIZE];
 static uint32_t *icao_filter_active;
+
+// Table for unique ICAO's
+static uint32_t icao_db[ICAO_FILTER_SIZE];
 
 static uint32_t icaoHash(uint32_t a)
 {
@@ -63,6 +68,7 @@ void icaoFilterInit()
 {
     memset(icao_filter_a, 0, sizeof(icao_filter_a));
     memset(icao_filter_b, 0, sizeof(icao_filter_b));
+    memset(icao_db, 0, sizeof(icao_db));
     icao_filter_active = icao_filter_a;
 }
 
@@ -160,4 +166,54 @@ void icaoFilterExpire()
         }
         next_flip = now + MODES_ICAO_FILTER_TTL;
     }
+}
+
+static void icaoAddtoDB_collision(uint32_t addr, uint32_t hash, int depth) {
+
+	uint32_t h;
+	h = icaoHash(hash);
+
+	if(!icao_db[h]) {
+	icao_db[h] = addr;
+	} else
+		if (icao_db[h] != addr) {
+		if (depth > 5) {printf("ERROR: hash table is full. Some ICAOs are lost!\n"); return;}
+		icaoAddtoDB_collision(addr, h, depth + 1); // Hash collision.
+		}
+
+}
+
+void icaoAddtoDB(uint32_t addr) {
+
+	uint32_t h;
+	h = icaoHash(addr);
+
+	if(!icao_db[h]) {
+	icao_db[h] = addr;
+	} else
+		if (icao_db[h] != addr) {
+		icaoAddtoDB_collision(addr, h, 0); // Hash collision. Try to add with double hash
+		}
+
+}
+
+void icaoPrintDB() {
+	uint32_t i = 0;
+	uint32_t row = 0;
+	uint32_t total = 0;
+
+	printf("File contains the following ICAOs:\n\n");
+
+	for(i=0; i<ICAO_FILTER_SIZE; i++) {
+
+	if(icao_db[i]) {
+		printf("%06X ",icao_db[i]);
+		row++;
+		total++;
+	}
+
+	if(row==ICAO_PER_LINE) {row=0; printf("\n");}
+	}
+	printf("\n\n");
+	printf("Total found %d unique ICAOs\n", total);
 }

@@ -214,7 +214,8 @@ struct {                             // Internal state
 	// Options
     int     show_progress;           // Show progress during file operation
     int     sbs_output;				 // SBS text output
-    int     quiet;                     // Suppress stdout
+    int     quiet;                   // Suppress stdout
+    int		find_icao;				 // Find only ICAO
     long long unsigned max_messages; // Max output messages
 
     // MLAT timestamps
@@ -421,10 +422,7 @@ int scoreModesMessage(unsigned char *msg, int validbits);
 int decodeModesMessage (struct modesMessage *mm, unsigned char *msg);
 void displayModesMessage(struct modesMessage *mm);
 void useModesMessage    (struct modesMessage *mm);
-//
-// Functions exported from interactive.c
-//
-//void  interactiveShowData(void);
+
 
 #ifdef __cplusplus
 }

@@ -66,6 +66,40 @@ void blackboxInitConfig(void) {
 }
 
 //
+// ================================ Main ====================================
+//
+void showHelp(void) {
+    printf(
+"-----------------------------------------------------------------------------\n"
+"| BEAST: black box utility                                            v0.999a|\n"
+"-----------------------------------------------------------------------------\n"
+"Build: %s\n\n"
+
+  "--filename <file>        Source file to proceed\n"
+  "--extract <file>         Extract BEAST data to new file (if no ICAO filter specified it just copies the source)\n"
+  "--only-find-icaos        Find all unique ICAOs in the file and print ICAOs list (WARNING: also shows non-ICAO!)\n"
+  "--export-kml <file>      Export coordinates and height to KML (WARNING: works only with --filter-icao)\n"
+  "--mlat-time <type>       Decode MLAT timestamps in specified manner. Types are: none (default), beast, dump1090\n"
+  "--init-time-unix <sec>   Start time (UNIX epoch, format: ss.ms) to calculate realtime using MLAT timestamps\n"
+  "--localtime              Decode time as local time (default: UTC)\n"
+  "--sbs-output             Show messages in SBS format (default: dump1090 style)\n"
+  "--filter-icao <addr>     Show only messages from the given ICAO\n"
+  "--max-messages <count>   Limit messages count from the start of the file (default: all)\n"
+  "--show-progress          Show progress during file operation\n"
+  "--quiet                  Do not output decoded messages to stdout (useful for --extract and --export-kml)\n\n"
+  "Additional BEAST options:\n"
+  "--modeac                 Enable decoding of SSR modes 3/A & 3/C\n"
+  "--gnss                   Show altitudes as HAE/GNSS (with H suffix) when available\n"
+  "--no-crc-check           Disable messages with broken CRC (discouraged)\n"
+  "--no-fix                 Disable single-bits error correction using CRC\n"
+  "--fix                    Enable single-bits error correction using CRC\n"
+  "--aggressive             More CPU for more messages (two bits fixes, ...)\n"
+  "--help                   Show this help\n",
+  MODES_DUMP1090_VERSION
+    );
+}
+
+//
 //=========================================================================
 //
 void blackboxInit(void) {
@@ -81,11 +115,13 @@ void blackboxInit(void) {
 	Modes.output_kml = NULL;
 
 	if (Modes.filename == NULL) {
+			showHelp();
 			fprintf(stderr, "\nERROR: no file specified. Nothing to do. Use --filename option or --help for more info.\n\n");
             exit(1);
 	}
 
 	if((Modes.filename_kml != NULL) && (!Modes.show_only)) {
+		    showHelp();
 			fprintf(stderr, "\nERROR: no filter ICAO specified. Option --export-kml works only with --filter-icao. Use --help for more info\n\n");
 			exit(1);
 	}
@@ -123,39 +159,6 @@ void blackboxInit(void) {
 	}
 }
 
-//
-// ================================ Main ====================================
-//
-void showHelp(void) {
-    printf(
-"-----------------------------------------------------------------------------\n"
-"| BEAST: black box utility                                            v0.998a|\n"
-"-----------------------------------------------------------------------------\n"
-"Build: %s\n\n"
-
-  "--filename <file>        Source file to proceed\n"
-  "--extract <file>         Extract BEAST data to new file (if no ICAO filter specified it just copies the source)\n"
-  "--export-kml <file>      Export coordinates and height to KML (works only with --filter-icao)\n"
-  "--mlat-time <type>       Decode MLAT timestamps in specified manner. Types are: none (default), beast, dump1090\n"
-  "--init-time-unix <sec>   Start time (UNIX epoch, format: ss.ms) to calculate realtime using MLAT timestamps\n"
-  "--localtime              Decode time as local time (default: UTC)\n"
-  "--sbs-output             Show messages in SBS format (default: dump1090 style)\n"
-  "--filter-icao <addr>     Show only messages from the given ICAO\n"
-  "--max-messages <count>   Limit messages count from the start of the file (default: all)\n"
-  "--show-progress          Show progress during file operation\n"
-  "--quiet                  Do not output decoded messages to stdout (useful for --extract and --export-kml)\n\n"
-  "Additional BEAST options:\n"
-  "--modeac                 Enable decoding of SSR modes 3/A & 3/C\n"
-  "--gnss                   Show altitudes as HAE/GNSS (with H suffix) when available\n"
-  "--no-crc-check           Disable messages with broken CRC (discouraged)\n"
-  "--no-fix                 Disable single-bits error correction using CRC\n"
-  "--fix                    Enable single-bits error correction using CRC\n"
-  "--aggressive             More CPU for more messages (two bits fixes, ...)\n"
-  "--help                   Show this help\n",
-  MODES_DUMP1090_VERSION
-    );
-}
-
 int main(int argc, char **argv) {
     // Initialization
     int j;
@@ -175,6 +178,8 @@ int main(int argc, char **argv) {
             Modes.mode_ac = 1;
 		} else if (!strcmp(argv[j],"--localtime")) {
             Modes.useLocaltime = 1;
+		} else if (!strcmp(argv[j],"--only-find-icaos")) {
+			Modes.find_icao = 1;
         } else if (!strcmp(argv[j],"--init-time-unix") && more) {
 			Modes.baseTime.tv_nsec = (int) (1000000000 * modf(atof(argv[++j]),&t));
 			Modes.baseTime.tv_sec = (int) t;
@@ -235,11 +240,16 @@ int main(int argc, char **argv) {
     readbeastfile();
 
 	printf("\n");
+	if(Modes.find_icao) {
+		icaoPrintDB();
+	} else {
+
 	if (Modes.msg_extracted) printf("Extracted %llu messages\n", Modes.msg_extracted);
 	printf("Total processed %llu messages\n", Modes.msg_processed);
 
 	if(Modes.err_bad_crc) printf("WARNING! Found %d messages with bad CRC\n", Modes.err_bad_crc);
 	if(Modes.err_not_known_ICAO) printf("WARNING! Found %d messages that might be valid, but we couldn't validate the CRC against a known ICAO\n", Modes.err_not_known_ICAO);
+	}
 
     // Close all files
     close (Modes.input_bb);

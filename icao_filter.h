@@ -38,4 +38,8 @@ uint32_t icaoFilterTestFuzzy(uint32_t partial);
 // old entries.
 void icaoFilterExpire();
 
+// Added for beastblackbox
+void icaoAddtoDB(uint32_t addr);
+void icaoPrintDB();
+
 #endif

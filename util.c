@@ -375,13 +375,14 @@ static int decodeBinMessage(char *p) {
 
     ch = *p++; /// Get the message type
     if (0x1A == ch) {ch=*p++;}
-    if       ((ch == '1') && (Modes.mode_ac)) { // skip ModeA/C unless user enables --modes-ac
-        msgLen = MODEAC_MSG_BYTES;
+    if (ch == '1' && Modes.mode_ac) { // skip ModeA/C unless user enables --modes-ac
+    	msgLen = MODEAC_MSG_BYTES;
+
     } else if (ch == '2') {
         msgLen = MODES_SHORT_MSG_BYTES;
     } else if (ch == '3') {
         msgLen = MODES_LONG_MSG_BYTES;
-    } else printf("ERROR!!! 0x1A %c\n",ch);
+    };
 
     if (msgLen) {
         mm = zeroMessage;
@@ -428,6 +429,10 @@ static int decodeBinMessage(char *p) {
 
         }
 
+        if(Modes.find_icao) {
+        	icaoAddtoDB(mm.addr);
+        }
+        else {
     	if ((!Modes.show_only || mm.addr == Modes.show_only) || (Modes.show_only==0)) {
             if (Modes.output_bb != -1) {
             	msgrealLen += 2; // HEADER
@@ -446,6 +451,7 @@ static int decodeBinMessage(char *p) {
 
         if((Modes.output_kml != NULL) && (Modes.show_only == mm.addr)) {
             writeKMLcoordinates(Modes.output_kml, &mm);
+        }
         }
     }
     return (0);
@@ -468,7 +474,7 @@ static int copyBinMessageSafe(char *p, int limit, char *out) {
 		} else return 0;
 
 	ch = *p;
-    if ((ch == '1') && (Modes.mode_ac)) { // skip ModeA/C unless user enables --modes-ac  {
+    if ((ch == '1')) {
         msgLen = MODEAC_MSG_BYTES;
 		*out = '1';
 		out++;
