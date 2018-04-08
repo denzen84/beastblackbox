@@ -11,6 +11,7 @@ BEAST black box utility is command line tool that decodes ModeS and ModeA/C info
 ```
 --filename <file>        Source file to proceed
 --extract <file>         Extract BEAST data to new file (if no ICAO filter specified it just copies the source)
+--only-find-icaos        Find all unique ICAOs in the file and print ICAOs list (WARNING: also shows non-ICAO!)
 --export-kml <file>      Export coordinates and height to KML (works only with --filter-icao)
 --mlat-time <type>       Decode MLAT timestamps in specified manner. Types are: none (default), beast, dump1090
 --init-time-unix <sec>   Start time (UNIX epoch, format: ss.ms) to calculate realtime using MLAT timestamps
@@ -152,3 +153,19 @@ The same as Example 4, but realtime stamps are calculated in user locale instead
 ```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --sbs-output --filter-icao 4249c6 --extract 4a49c6-uta469-beast.log```
 
 The same as Example 3, but saves all binary BEAST messages from ICAO 4249c6 to new file _uta469-beast.log_.
+
+###### Example 7
+
+```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --only-find-icaos```
+
+The result is list of available ICAOs addresses in the file:
+
+```
+File contains the following ICAOs:
+
+424263 400159 504DD9 4242E5 42460C 4249B5 780C5D 4CAAAE 780A5C 71BE34 
+4248E7
+
+Total found 11 unique ICAOs
+```
+
