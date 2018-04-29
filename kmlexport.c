@@ -52,7 +52,7 @@
 const char kml_head[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
 "<kml xmlns=\"http://www.opengis.net/kml/2.2\"> <Document>"
  "<name>KML Flight reconstruction of ICAO %X</name>"
- "<description>Procuduced by BEAST black box https://github.com/denzen84/beastblackbox/blob/master/README.md</description> <Style id=\"yellowLineGreenPoly\">"
+ "<description>Produced by BEAST black box https://github.com/denzen84/beastblackbox/blob/master/README.md</description> <Style id=\"yellowLineGreenPoly\">"
  "<LineStyle>"
  "<color>7fffae1f</color>"
  "<width>4</width>"
