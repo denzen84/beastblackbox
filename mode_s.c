@@ -1527,11 +1527,11 @@ static void displatMLATtimestamp(struct modesMessage *mm) {
 			printf("Realtime ");
 			if (Modes.useLocaltime) {
 				localtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
-				printf("LOCALTIME");
+				printf("(local)");
 			}
 			else {
 				gmtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
-				printf("UTC");
+				printf("(UTC)");
 			}
 			printf(": %04d/%02d/%02d %02d:%02d:%02d.%03u\n",
 					(stTime_receive.tm_year+1900),
@@ -1549,11 +1549,11 @@ static void displatMLATtimestamp(struct modesMessage *mm) {
 			printf("Realtime ");
 			if (Modes.useLocaltime) {
 				localtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
-				printf("LOCALTIME");
+				printf("(local)");
 			}
 			else {
 				gmtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive);
-				printf("UTC");
+				printf("(UTC)");
 			}
 			printf(": %04d/%02d/%02d %02d:%02d:%02d.%03u\n",
 					(stTime_receive.tm_year+1900),
@@ -1568,7 +1568,7 @@ static void displatMLATtimestamp(struct modesMessage *mm) {
 			h = realtime / 3600;
 			m = realtime / 60 % 60;
 			s = realtime % 60;
-			printf("Realtime UTC: %02d:%02d:%02d.%03u\n",h,m,s, (unsigned) (mm->timestampMsg & BEAST_DROP_UPPER_34_BITS) / 1000000U);
+			printf("Realtime (UTC): %02d:%02d:%02d.%03u\n",h,m,s, (unsigned) (mm->timestampMsg & BEAST_DROP_UPPER_34_BITS) / 1000000U);
 		}
 		break;
 	default: printf("Time: n/a\n"); break;
