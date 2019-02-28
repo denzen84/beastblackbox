@@ -1,4 +1,6 @@
 # BEAST black box utility
+# WARNING!
+This is deprecated utility. Now functionality integrated into [dump1090-fa](https://github.com/denzen84/dump1090). Check out [pull request](https://github.com/flightaware/dump1090/pull/35).
 ## Overview
 BEAST black box utility is command line tool that decodes ModeS and ModeA/C information stored in binary BEAST format in the file. It's useful to decode BEAST logs from your ADSB receiver/station. BEAST format is very compact and contains source ADSB messages from aircrafts with some additional information. To create BEAST logs in this way there is no need in special utilities - it can be easily created with standart UNIX tools, such as _netcat_. Utility is based on the source code of dump1090 and inherits all benefits of this tool. In other words, it is dump1090 code that reads binary BEAST data from the file instead of network or RTL-dongle as it does original dump1090.
 ## Main features
