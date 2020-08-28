@@ -2,17 +2,17 @@
 # WARNING!
 This is deprecated utility. Now functionality integrated into [dump1090-fa](https://github.com/denzen84/dump1090). Check out [pull request](https://github.com/flightaware/dump1090/pull/35).
 ## Overview
-BEAST black box utility is command line tool that decodes ModeS and ModeA/C information stored in binary BEAST format in the file. It's useful to decode BEAST logs from your ADSB receiver/station. BEAST format is very compact and contains source ADSB messages from aircrafts with some additional information. To create BEAST logs in this way there is no need in special utilities - it can be easily created with standart UNIX tools, such as _netcat_. Utility is based on the source code of dump1090 and inherits all benefits of this tool. In other words, it is dump1090 code that reads binary BEAST data from the file instead of network or RTL-dongle as it does original dump1090.
+BEAST black box utility is a command line tool that decodes ModeS and ModeA/C information stored in a binary BEAST format in the file. It's useful to decode BEAST logs from your ADSB receiver/station. BEAST format is very compact and contains source ADSB messages from aircraft with some additional information. To create BEAST logs in this way there is no need in special utilities - it can be easily created with standard UNIX tools, such as _netcat_. The utility is based on the source code of dump1090 and inherits all benefits of this tool. In other words, it is a dump1090 code that reads binary BEAST data from the file instead of network or RTL-dongle as it does original dump1090.
 ## Main features
-1. Decode information from binary BEAST format in two ways: dump1090-style view or SBS text format
+1. Decode information from a binary BEAST format in two ways: dump1090-style view or SBS text format
 2. Extract binary BEAST messages according to the filter to another file
 3. Filter by ICAO address
-4. Decode MLAT timestamps in two ways: relative time and realtime (for second option it needs to have realtime information in UNIX time format for the first file record).
-5. Experimental flight track export of the specified ICAO to KML file. Useful to see track in Google Maps or Google Earth.
+4. Decode MLAT timestamps in two ways: relative time and realtime (for the second option it needs to have realtime information in UNIX time format for the first file record).
+5. Experimental flight track export of the specified ICAO to the KML file. Useful to see the track in Google Maps or Google Earth.
 ## Command line keys and options
 ```
 --filename <file>        Source file to proceed
---extract <file>         Extract BEAST data to new file (if no ICAO filter specified it just copies the source)
+--extract <file>         Extract BEAST data to the new file (if no ICAO filter specified it just copies the source)
 --only-find-icaos        Find all unique ICAOs in the file and print ICAOs list (WARNING: also shows non-ICAO!)
 --export-kml <file>      Export coordinates and height to KML (works only with --filter-icao)
 --mlat-time <type>       Decode MLAT timestamps in specified manner. Types are: none (default), beast, dump1090
@@ -38,7 +38,7 @@ To save binary BEAST traffic from dump1090 to the file in Linux-based systems, t
 
 ```nc 127.0.0.1 30005 > radar-ulss7-beast-bin.log```
 
-But this method has one disadvantage. It will lost information about realtime and all messages timestamps could be only decoded as relative time. To avoid this it could be useful to use script:
+But this method has one disadvantage. It will lose information about realtime and all messages timestamps could be only decoded as relative time. To avoid this it could be useful to use the script:
 ```
 #!/bin/bash
 foldname=`date +%s.%N`
@@ -49,15 +49,15 @@ nc 127.0.0.1 30005 > $foldname-$radar-beast-bin.log &
 exit 0
 ```
 
-This script will save UTC Unix timestamp in the filename and will give opportunity to get realtime stamps using _--init-unix-time_ command line option.
+This script will save UTC Unix timestamp in the filename and will give the opportunity to get realtime stamps using _--init-unix-time_ command-line option.
 
 ## About MLAT timestamps and log timings
-As mentioned above, binary Beast format doesn't contain real time information at full. According to Beast format description at [http://wiki.modesbeast.com](http://wiki.modesbeast.com/Radarcape:Firmware_Versions), MLAT timestamp consists of seconds count from the start of the day (upper 18 bits) and nanoseconds (first 30 bits).
+As mentioned above, the binary Beast format doesn't contain real-time information at full. According to Beast format description at [http://wiki.modesbeast.com](http://wiki.modesbeast.com/Radarcape:Firmware_Versions), MLAT timestamp consists of seconds count from the start of the day (upper 18 bits) and nanoseconds (first 30 bits).
 
->The GPS timestamp is completely handled in the FPGA (hardware) and does not require any interactions on the Linux side. This is >essential to meet the required accuracy. The local clock in the FPGA (64MHz or 96MHz) is stretched or compressed to meet 1e9 counts in >between two pulses by a linear algorithm, in order to avoid bigger jumps in the timestamp. Rollover from 999999999 to 0 occurs >synchronously to the 1PPS leading edge. In parallel, the Second-of-Day information is read from the TSIP serial data stream and also >aligned to the 1PPS pulse. Both parts are then mapped into the 48bits that are available for the timestamp and transmitted with each >Mode-S or Mode-A/C message.
+>The GPS timestamp is completely handled in the FPGA (hardware) and does not require any interactions on the Linux side. This is >essential to meet the required accuracy. The local clock in the FPGA (64MHz or 96MHz) is stretched or compressed to meet 1e9 counts in >between two pulses by a linear algorithm, to avoid bigger jumps in the timestamp. Rollover from 999999999 to 0 occurs >synchronously to the 1PPS leading edge. In parallel, the Second-of-Day information is read from the TSIP serial data stream and also >aligned to the 1PPS pulse. Both parts are then mapped into the 48bits that are available for the timestamp and transmitted with each >Mode-S or Mode-A/C message.
 
 > * SecondsOfDay are using the upper 18 bits of the timestamp
-> * Nanoseconds are using the lower 30 bits. The value there directly converts into a 1ns based value and does not need to be converted by sample rate
+> * Nanoseconds are using the lower 30 bits. The value there directly converts into a 1ns based value and does not need to be converted by the sample rate
 Original and compatible devices like Radarscrape, Mode-S Beast, Flighradar24 feeder are used this time encoding standart.
 
 In opposite, dump1090 uses simply 48-bit counter with absolutely no information about realtime.
@@ -74,14 +74,14 @@ cd beastblackbox
 make
 ```
 
-As mentioned above, code is fully compatible with dump1090 and it can be compiled for all paltforms that available for dump1090.
+As mentioned above, code is fully compatible with dump1090 and it can be compiled for all platforms that available for dump1090.
 
 ## Usage examples
 ###### Example 1
 
 ```./beastblackbox --filename radar-ulss7-beast-bin-utc--1520012558.147403028.log --max-messages 1000```
 
-Decodes first 1000 messages of the file _radar-ulss7-beast-bin-utc--1520012558.147403028.log_ and outputs information in dump1090-style.
+Decodes the first 1000 messages of the file _radar-ulss7-beast-bin-utc--1520012558.147403028.log_ and outputs information in dump1090-style.
 
 Example output is:
 
@@ -170,4 +170,3 @@ File contains the following ICAOs:
 
 Total found 11 unique ICAOs
 ```
-
